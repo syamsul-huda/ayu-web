@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASTRA Otoparts – Individual Profile Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="logo-circle">AO</div>
+  <h1>ASTRA Otoparts <span>Individual Profile System</span></h1>
+  <button class="header-back-btn" id="backBtn" onclick="goBack()">&#8592; Kembali</button>
+</header>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MODAL CONFIRM DELETE -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-box">
+    <h3>Hapus Profil</h3>
+    <p>Yakin ingin menghapus profil ini? Tindakan tidak dapat dibatalkan.</p>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeDeleteModal()">Batal</button>
+      <button class="btn-danger" onclick="confirmDelete()">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW: DASHBOARD -->
+<div class="view active" id="viewDashboard">
+  <div class="dashboard-toolbar">
+    <h2>Daftar Individual Profile</h2>
+    <input class="search-box" type="text" placeholder="Cari NPK atau Nama..." id="searchInput" oninput="renderList()" />
+    <button class="btn-primary" onclick="showForm()">&#43; Tambah Profil</button>
+  </div>
+  <div class="profile-list" id="profileList"></div>
+  <div class="empty-state" id="emptyState" style="display:none">
+    <div class="icon">📋</div>
+    <p>Belum ada data profil.<br>Klik <strong>Tambah Profil</strong> untuk memulai.</p>
+  </div>
+</div>
+
+<!-- VIEW: FORM -->
+<div class="view" id="viewForm">
+  <div class="form-wrapper">
+    <div class="form-title-bar" id="formTitleBar">Input Individual Profile</div>
+    <div class="form-body">
+      <form id="profileForm" onsubmit="saveProfile(event)">
+        <input type="hidden" id="editId" />
+
+        <div class="form-basic">
+          <div class="basic-fields">
+            <div class="field-group">
+              <label>NPK *</label>
+              <input type="text" id="f_npk" placeholder="Nomor Pokok Karyawan" required />
+            </div>
+            <div class="field-group">
+              <label>Nama *</label>
+              <input type="text" id="f_name" placeholder="Nama Lengkap" required />
+            </div>
+            <div class="field-group">
+              <label>Tanggal Lahir</label>
+              <input type="date" id="f_dob" />
+            </div>
+            <div class="field-group">
+              <label>Job Title</label>
+              <input type="text" id="f_jobTitle" placeholder="Jabatan" />
+            </div>
+            <div class="field-group">
+              <label>Company</label>
+              <input type="text" id="f_company" placeholder="Perusahaan" />
+            </div>
+            <div class="field-group">
+              <label>Grade / HAV</label>
+              <div style="display:flex;gap:8px">
+                <input type="text" id="f_grade" placeholder="Grade" style="flex:1" />
+                <input type="text" id="f_hav" placeholder="HAV" style="flex:1" />
+              </div>
+            </div>
+            <div class="field-group">
+              <label>Promotion Date</label>
+              <input type="date" id="f_promotionDate" />
+            </div>
+            <div class="field-group">
+              <label>PA History</label>
+              <div class="pa-row">
+                <div class="pa-item">
+                  <label>2023</label>
+                  <input type="text" id="f_pa2023" placeholder="-" />
+                </div>
+                <div class="pa-item">
+                  <label>2024</label>
+                  <input type="text" id="f_pa2024" placeholder="-" />
+                </div>
+                <div class="pa-item">
+                  <label>2025</label>
+                  <input type="text" id="f_pa2025" placeholder="-" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="photo-upload">
+            <div class="photo-preview" id="photoPreview" onclick="document.getElementById('photoInput').click()">
+              <div class="placeholder">FOTO<br><small>Klik untuk unggah</small></div>
+            </div>
+            <label for="photoInput">Unggah Foto</label>
+            <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhoto(event)" />
+          </div>
+        </div>
+
+        <div class="two-col-layout" style="margin-bottom:22px">
+          <div class="section" style="margin-bottom:0">
+            <div class="section-title">Strength</div>
+            <div style="border:1px solid #c7d3e6; border-top:none; padding:8px;">
+              <textarea id="f_strength" placeholder="Tuliskan kelebihan / kekuatan..." rows="4" style="width:100%;border:none;outline:none;font-family:inherit;font-size:.88rem;resize:vertical"></textarea>
+            </div>
+          </div>
+          <div class="section" style="margin-bottom:0">
+            <div class="section-title">Areas for Development</div>
+            <div style="border:1px solid #c7d3e6; border-top:none; padding:8px;">
+              <textarea id="f_afd" placeholder="Tuliskan area yang perlu dikembangkan..." rows="4" style="width:100%;border:none;outline:none;font-family:inherit;font-size:.88rem;resize:vertical"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Educational Background</div>
+          <table class="dyn-table" id="tblEdu">
+            <thead><tr><th>Year</th><th>Grade</th><th>Institution, Major</th><th></th></tr></thead>
+            <tbody id="eduBody"></tbody>
+          </table>
+          <button type="button" class="add-row-btn" onclick="addRow('edu')">+ Tambah Baris</button>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Training</div>
+          <table class="dyn-table" id="tblTraining">
+            <thead><tr><th>Year</th><th>Astra Leadership Dev Prog</th><th>ICT / Project / Total</th><th></th></tr></thead>
+            <tbody id="trainingBody"></tbody>
+          </table>
+          <button type="button" class="add-row-btn" onclick="addRow('training')">+ Tambah Baris</button>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Others (during past 5 years)</div>
+          <table class="dyn-table" id="tblOthers">
+            <thead><tr><th>Training</th><th>Year</th><th>Vendor</th><th></th></tr></thead>
+            <tbody id="othersBody"></tbody>
+          </table>
+          <button type="button" class="add-row-btn" onclick="addRow('others')">+ Tambah Baris</button>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Working Experience</div>
+          <table class="dyn-table" id="tblWork">
+            <thead><tr><th>Year</th><th>Position</th><th>Company</th><th></th></tr></thead>
+            <tbody id="workBody"></tbody>
+          </table>
+          <button type="button" class="add-row-btn" onclick="addRow('work')">+ Tambah Baris</button>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Individual Development Plan</div>
+          <table class="dyn-table" id="tblIdp">
+            <thead><tr><th>Development Area</th><th>Development Program</th><th>Development Target</th><th>Due Date</th><th></th></tr></thead>
+            <tbody id="idpBody"></tbody>
+          </table>
+          <button type="button" class="add-row-btn" onclick="addRow('idp')">+ Tambah Baris</button>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="goBack()">Batal</button>
+          <button type="submit" class="btn-primary">&#10003; Simpan Profil</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW: PROFILE -->
+<div class="view" id="viewProfile">
+  <div class="profile-page" id="profilePage"></div>
+</div>
+
+<footer class="app-footer">
+  <p>&copy; 2025 ASTRA Otoparts. All rights reserved.</p>
+  <p class="footer-credit">Created by Syamsul Huda</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
