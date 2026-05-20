@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    container_name: ayu-app
+    ports:
+      - "3001:3001"
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-15432}
+      DB_NAME: ${DB_NAME:-ayu_db}
+      DB_USER: ${DB_USER:-admin}
+      DB_PASSWORD: ${DB_PASSWORD}
+      PORT: ${PORT:-3001}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES: ${JWT_EXPIRES:-8h}
+    volumes:
+      - ./uploads:/app/uploads
+    restart: unless-stopped
