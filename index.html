@@ -3,26 +3,98 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ASTRA Otoparts – Individual Profile Dashboard</title>
+  <title>Ayu Fitriah – Personal Web</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
 <!-- HEADER -->
 <header class="app-header">
-  <div class="logo-circle">AO</div>
-  <h1>ASTRA Otoparts <span>Individual Profile System</span></h1>
+  <div class="logo-circle logo-home-btn" onclick="showSection('artikel')" title="Kembali ke Beranda"><svg viewBox="0 0 46 46" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block"><ellipse cx="23" cy="31" rx="18" ry="15" fill="#00695c"/><circle cx="23" cy="17" r="13" fill="#00695c"/><ellipse cx="23" cy="20.5" rx="8.5" ry="9.5" fill="#f5c09a"/><ellipse cx="23" cy="9" rx="8.5" ry="5" fill="#00695c"/><circle cx="19.5" cy="19.5" r="1.7" fill="#1a0a00"/><circle cx="26.5" cy="19.5" r="1.7" fill="#1a0a00"/><circle cx="20.2" cy="18.8" r="0.55" fill="#fff"/><circle cx="27.2" cy="18.8" r="0.55" fill="#fff"/><path d="M20 24.5 Q23 27.5 26 24.5" stroke="#b06040" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg></div>
+  <h1>Ayu Fitriah <span>Personal Web</span></h1>
+  <nav class="header-nav">
+    <button class="nav-btn active" id="navArtikel" onclick="showSection('artikel')">Artikel</button>
+    <button class="nav-btn" id="navPortofolio" onclick="showSection('portofolio')">Portofolio</button>
+    <button class="nav-btn" id="navProfil" onclick="showSection('profil')">Individual Profile</button>
+  </nav>
+  <button class="header-settings-btn admin-only" onclick="showChangePasswordModal()" title="Ganti Password">&#9881;</button>
+  <button class="header-auth-btn" id="headerAuthBtn" onclick="handleAuthBtn()">&#128274; Masuk</button>
   <button class="header-back-btn" id="backBtn" onclick="goBack()">&#8592; Kembali</button>
 </header>
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- MODAL: GANTI PASSWORD -->
+<div class="modal-overlay" id="changePasswordModal">
+  <div class="login-card" style="position:relative;max-width:400px;width:90%">
+    <button class="login-close-btn" onclick="closeChangePasswordModal()" title="Tutup">&#10005;</button>
+    <div style="font-size:2rem;margin-bottom:12px">&#128273;</div>
+    <h2 class="login-title">Ganti Password</h2>
+    <p class="login-subtitle">Masukkan password lama dan password baru</p>
+    <form id="changePasswordForm" onsubmit="doChangePassword(event)" autocomplete="off">
+      <div class="field-group" style="margin-bottom:12px;text-align:left">
+        <label>Password Saat Ini</label>
+        <div class="pw-wrap">
+          <input type="password" id="cpCurrent" placeholder="Password saat ini" required />
+          <button type="button" class="pw-toggle" onclick="togglePwField('cpCurrent')">&#128065;</button>
+        </div>
+      </div>
+      <div class="field-group" style="margin-bottom:12px;text-align:left">
+        <label>Password Baru</label>
+        <div class="pw-wrap">
+          <input type="password" id="cpNew" placeholder="Minimal 6 karakter" required minlength="6" />
+          <button type="button" class="pw-toggle" onclick="togglePwField('cpNew')">&#128065;</button>
+        </div>
+      </div>
+      <div class="field-group" style="margin-bottom:8px;text-align:left">
+        <label>Konfirmasi Password Baru</label>
+        <div class="pw-wrap">
+          <input type="password" id="cpConfirm" placeholder="Ulangi password baru" required />
+          <button type="button" class="pw-toggle" onclick="togglePwField('cpConfirm')">&#128065;</button>
+        </div>
+      </div>
+      <div class="login-error" id="cpError"></div>
+      <button type="submit" class="btn-primary" style="width:100%;justify-content:center;padding:12px;margin-top:8px">Simpan Password</button>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: LOGIN -->
+<div class="modal-overlay" id="loginModal">
+  <div class="login-card" style="position:relative;max-width:400px;width:90%">
+    <button class="login-close-btn" onclick="closeLoginModal()" title="Tutup">&#10005;</button>
+    <div class="login-avatar">
+      <svg viewBox="0 0 46 46" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block"><ellipse cx="23" cy="31" rx="18" ry="15" fill="#00695c"/><circle cx="23" cy="17" r="13" fill="#00695c"/><ellipse cx="23" cy="20.5" rx="8.5" ry="9.5" fill="#f5c09a"/><ellipse cx="23" cy="9" rx="8.5" ry="5" fill="#00695c"/><circle cx="19.5" cy="19.5" r="1.7" fill="#1a0a00"/><circle cx="26.5" cy="19.5" r="1.7" fill="#1a0a00"/><circle cx="20.2" cy="18.8" r="0.55" fill="#fff"/><circle cx="27.2" cy="18.8" r="0.55" fill="#fff"/><path d="M20 24.5 Q23 27.5 26 24.5" stroke="#b06040" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
+    </div>
+    <h2 class="login-title">Masuk sebagai Admin</h2>
+    <p class="login-subtitle">Login untuk mengelola konten</p>
+    <form id="loginForm" onsubmit="doLogin(event)" autocomplete="off">
+      <div class="field-group" style="margin-bottom:14px;text-align:left">
+        <label>Username</label>
+        <input type="text" id="loginUsername" placeholder="Masukkan username" required />
+      </div>
+      <div class="field-group" style="margin-bottom:8px;text-align:left">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="loginPassword" placeholder="Masukkan password" required />
+          <button type="button" class="pw-toggle" onclick="togglePassword()" title="Tampilkan password">&#128065;</button>
+        </div>
+      </div>
+      <div class="login-error" id="loginError"></div>
+      <button type="submit" class="btn-primary" style="width:100%;justify-content:center;padding:12px;margin-top:8px;font-size:.95rem">Masuk</button>
+    </form>
+    <div class="login-hint">
+      &#128274; Default: <strong>admin</strong> / <strong>astra2025</strong>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL CONFIRM DELETE -->
 <div class="modal-overlay" id="deleteModal">
   <div class="modal-box">
-    <h3>Hapus Profil</h3>
-    <p>Yakin ingin menghapus profil ini? Tindakan tidak dapat dibatalkan.</p>
+    <h3 id="deleteModalTitle">Hapus Item</h3>
+    <p id="deleteModalText">Yakin ingin menghapus item ini? Tindakan tidak dapat dibatalkan.</p>
     <div class="modal-btns">
       <button class="btn-secondary" onclick="closeDeleteModal()">Batal</button>
       <button class="btn-danger" onclick="confirmDelete()">Hapus</button>
@@ -30,12 +102,172 @@
   </div>
 </div>
 
+<!-- ==========================================
+     ARTIKEL SECTION
+     ========================================== -->
+
+<!-- VIEW: ARTIKEL LIST (halaman utama) -->
+<div class="view active" id="viewArtikelList">
+  <div class="dashboard-toolbar">
+    <h2>Artikel</h2>
+    <input class="search-box" type="text" placeholder="Cari judul atau kategori..." id="artikelSearchInput" oninput="renderArtikelList()" />
+    <button class="btn-primary admin-only" onclick="showArtikelForm()">&#43; Tulis Artikel</button>
+  </div>
+  <div class="artikel-list" id="artikelList"></div>
+  <div class="empty-state" id="artikelEmptyState" style="display:none">
+    <div class="icon">📝</div>
+    <p>Belum ada artikel.<br>Klik <strong>Tulis Artikel</strong> untuk memulai.</p>
+  </div>
+</div>
+
+<!-- VIEW: ARTIKEL FORM -->
+<div class="view" id="viewArtikelForm">
+  <div class="form-wrapper">
+    <div class="form-title-bar" id="artikelFormTitle">Tulis Artikel Baru</div>
+    <div class="form-body">
+      <form id="artikelForm" onsubmit="saveArtikel(event)">
+        <input type="hidden" id="a_editId" />
+        <div class="field-group" style="margin-bottom:16px">
+          <label>Judul Artikel *</label>
+          <input type="text" id="a_title" placeholder="Judul artikel..." required />
+        </div>
+        <div class="three-col-grid" style="margin-bottom:16px">
+          <div class="field-group">
+            <label>Kategori</label>
+            <input type="text" id="a_category" placeholder="e.g. Tips, Tutorial, Berita" />
+          </div>
+          <div class="field-group">
+            <label>Penulis</label>
+            <input type="text" id="a_author" placeholder="Nama penulis" />
+          </div>
+          <div class="field-group">
+            <label>Tanggal</label>
+            <input type="date" id="a_date" />
+          </div>
+        </div>
+        <div class="field-group" style="margin-bottom:16px">
+          <label>Gambar Cover</label>
+          <div class="cover-upload-area" id="artikelCoverPreview" onclick="document.getElementById('artikelCoverInput').click()">
+            <span class="cover-placeholder">🖼️&nbsp; Klik untuk unggah gambar cover</span>
+          </div>
+          <input type="file" id="artikelCoverInput" accept="image/*" style="display:none" onchange="handleCoverUpload(event,'artikelCoverPreview','a_coverData')" />
+          <input type="hidden" id="a_coverData" />
+        </div>
+        <div class="field-group" style="margin-bottom:16px">
+          <label>Isi Artikel *</label>
+          <textarea id="a_content" placeholder="Tuliskan isi artikel di sini..." rows="14" required></textarea>
+        </div>
+        <div class="field-group" style="margin-bottom:16px">
+          <label>Tags <small style="color:#999;font-weight:400">(pisahkan dengan koma)</small></label>
+          <input type="text" id="a_tags" placeholder="e.g. HR, Leadership, Development" />
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="goBack()">Batal</button>
+          <button type="submit" class="btn-primary">&#10003; Simpan Artikel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW: ARTIKEL DETAIL -->
+<div class="view" id="viewArtikelDetail">
+  <div class="content-detail-page" id="artikelDetailPage"></div>
+</div>
+
+<!-- ==========================================
+     PORTOFOLIO SECTION
+     ========================================== -->
+
+<!-- VIEW: PORTOFOLIO LIST -->
+<div class="view" id="viewPortofolioList">
+  <div class="dashboard-toolbar">
+    <h2>Portofolio</h2>
+    <input class="search-box" type="text" placeholder="Cari judul atau kategori..." id="portoSearchInput" oninput="renderPortofolioList()" />
+    <button class="btn-primary admin-only" onclick="showPortofolioForm()">&#43; Tambah Portofolio</button>
+  </div>
+  <div class="porto-grid" id="portoList"></div>
+  <div class="empty-state" id="portoEmptyState" style="display:none">
+    <div class="icon">💼</div>
+    <p>Belum ada portofolio.<br>Klik <strong>Tambah Portofolio</strong> untuk memulai.</p>
+  </div>
+</div>
+
+<!-- VIEW: PORTOFOLIO FORM -->
+<div class="view" id="viewPortofolioForm">
+  <div class="form-wrapper">
+    <div class="form-title-bar" id="portoFormTitle">Tambah Portofolio Baru</div>
+    <div class="form-body">
+      <form id="portofolioForm" onsubmit="savePortofolio(event)">
+        <input type="hidden" id="p_editId" />
+        <div class="two-col-layout" style="margin-bottom:16px">
+          <div class="field-group">
+            <label>Judul Proyek *</label>
+            <input type="text" id="p_title" placeholder="Nama proyek..." required />
+          </div>
+          <div class="field-group">
+            <label>Kategori</label>
+            <input type="text" id="p_category" placeholder="e.g. Web, Mobile, Design" />
+          </div>
+        </div>
+        <div class="three-col-grid" style="margin-bottom:16px">
+          <div class="field-group">
+            <label>Tahun</label>
+            <input type="number" id="p_year" placeholder="2024" min="2000" max="2099" />
+          </div>
+          <div class="field-group">
+            <label>Klien / Perusahaan</label>
+            <input type="text" id="p_client" placeholder="Nama klien" />
+          </div>
+          <div class="field-group">
+            <label>Peran / Role</label>
+            <input type="text" id="p_role" placeholder="e.g. Frontend Developer" />
+          </div>
+        </div>
+        <div class="field-group" style="margin-bottom:16px">
+          <label>Link Proyek</label>
+          <input type="text" id="p_url" placeholder="https://..." />
+        </div>
+        <div class="field-group" style="margin-bottom:16px">
+          <label>Gambar Cover</label>
+          <div class="cover-upload-area" id="portoCoverPreview" onclick="document.getElementById('portoCoverInput').click()">
+            <span class="cover-placeholder">🖼️&nbsp; Klik untuk unggah gambar cover</span>
+          </div>
+          <input type="file" id="portoCoverInput" accept="image/*" style="display:none" onchange="handleCoverUpload(event,'portoCoverPreview','p_coverData')" />
+          <input type="hidden" id="p_coverData" />
+        </div>
+        <div class="field-group" style="margin-bottom:16px">
+          <label>Deskripsi Proyek *</label>
+          <textarea id="p_description" placeholder="Deskripsikan proyek ini..." rows="8" required></textarea>
+        </div>
+        <div class="field-group" style="margin-bottom:16px">
+          <label>Teknologi yang Digunakan <small style="color:#999;font-weight:400">(pisahkan dengan koma)</small></label>
+          <input type="text" id="p_technologies" placeholder="e.g. React, Node.js, MySQL" />
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="goBack()">Batal</button>
+          <button type="submit" class="btn-primary">&#10003; Simpan Portofolio</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW: PORTOFOLIO DETAIL -->
+<div class="view" id="viewPortofolioDetail">
+  <div class="content-detail-page" id="portoDetailPage"></div>
+</div>
+
+<!-- ==========================================
+     INDIVIDUAL PROFILE SECTION
+     ========================================== -->
+
 <!-- VIEW: DASHBOARD -->
-<div class="view active" id="viewDashboard">
+<div class="view" id="viewDashboard">
   <div class="dashboard-toolbar">
     <h2>Daftar Individual Profile</h2>
     <input class="search-box" type="text" placeholder="Cari NPK atau Nama..." id="searchInput" oninput="renderList()" />
-    <button class="btn-primary" onclick="showForm()">&#43; Tambah Profil</button>
+    <button class="btn-primary admin-only" onclick="showForm()">&#43; Tambah Profil</button>
   </div>
   <div class="profile-list" id="profileList"></div>
   <div class="empty-state" id="emptyState" style="display:none">
@@ -188,7 +420,7 @@
 </div>
 
 <footer class="app-footer">
-  <p>&copy; 2025 ASTRA Otoparts. All rights reserved.</p>
+  <p>&copy; 2025 Ayu Fitriah. All rights reserved.</p>
   <p class="footer-credit">Created by Syamsul Huda</p>
 </footer>
 
