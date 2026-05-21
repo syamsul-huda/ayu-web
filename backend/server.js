@@ -12,21 +12,9 @@ const app = express();
 // Trust reverse proxy (NAS/nginx) untuk IP yang akurat
 app.set('trust proxy', 1);
 
-// Security headers
+// Security headers — CSP dinonaktifkan karena app pakai inline onclick handler
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc:  ["'self'", "'unsafe-inline'"],
-      styleSrc:   ["'self'", "'unsafe-inline'"],
-      imgSrc:     ["'self'", "data:", "blob:", "*"],
-      connectSrc: ["'self'"],
-      fontSrc:    ["'self'"],
-      objectSrc:  ["'none'"],
-      frameSrc:   ["'none'"],
-      baseUri:    ["'self'"],
-    },
-  },
+  contentSecurityPolicy:    false,
   crossOriginEmbedderPolicy: false,
 }));
 
