@@ -83,30 +83,7 @@
       <div class="login-error" id="loginError"></div>
       <button type="submit" class="btn-primary" style="width:100%;justify-content:center;padding:12px;margin-top:8px;font-size:.95rem">Masuk</button>
     </form>
-    <div class="login-hint">
-      &#128274; Default: <strong>admin</strong> / <strong>astra2025</strong>
-    </div>
-    <button type="button" class="forgot-pw-link" onclick="showForgotPasswordModal()">Lupa Password?</button>
-  </div>
-</div>
-
-<!-- MODAL: LUPA PASSWORD -->
-<div class="modal-overlay" id="forgotPasswordModal">
-  <div class="login-card" style="position:relative;max-width:400px;width:90%">
-    <button class="login-close-btn" onclick="closeForgotPasswordModal()" title="Tutup">&#10005;</button>
-    <div style="font-size:2rem;margin-bottom:12px">&#128231;</div>
-    <h2 class="login-title">Lupa Password</h2>
-    <p class="login-subtitle">Masukkan username admin untuk menerima link reset password</p>
-    <form id="forgotPasswordForm" onsubmit="doForgotPassword(event)" autocomplete="off">
-      <div class="field-group" style="margin-bottom:12px;text-align:left">
-        <label>Username</label>
-        <input type="text" id="fpUsername" placeholder="Masukkan username" required />
-      </div>
-      <div class="login-error" id="fpError"></div>
-      <div class="login-success" id="fpSuccess"></div>
-      <button type="submit" id="fpSubmitBtn" class="btn-primary" style="width:100%;justify-content:center;padding:12px;margin-top:8px">&#128231; Kirim Link Reset</button>
-    </form>
-    <button type="button" class="forgot-pw-link" onclick="closeForgotPasswordModal();showLoginModal()">&#8592; Kembali ke Login</button>
+    <button type="button" class="forgot-pw-btn" id="forgotPwBtn" onclick="sendResetLink()">&#128231; Lupa Password?</button>
   </div>
 </div>
 

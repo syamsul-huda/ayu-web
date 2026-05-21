@@ -176,46 +176,19 @@ function togglePwField(id) {
 /* ===================================================
    LUPA PASSWORD
 =================================================== */
-function showForgotPasswordModal() {
-  closeLoginModal();
-  document.getElementById('forgotPasswordForm').reset();
-  document.getElementById('fpError').textContent = '';
-  document.getElementById('fpSuccess').classList.remove('show');
-  document.getElementById('fpSubmitBtn').disabled = false;
-  document.getElementById('forgotPasswordModal').classList.add('show');
-  setTimeout(() => document.getElementById('fpUsername').focus(), 100);
-}
-
-function closeForgotPasswordModal() {
-  document.getElementById('forgotPasswordModal').classList.remove('show');
-  document.getElementById('forgotPasswordForm').reset();
-  document.getElementById('fpError').textContent = '';
-  document.getElementById('fpSuccess').classList.remove('show');
-  document.getElementById('fpSubmitBtn').disabled = false;
-}
-
-async function doForgotPassword(e) {
-  e.preventDefault();
-  const username = document.getElementById('fpUsername').value.trim();
-  const errEl    = document.getElementById('fpError');
-  const succEl   = document.getElementById('fpSuccess');
-  const btn      = document.getElementById('fpSubmitBtn');
-  errEl.textContent = '';
-  succEl.classList.remove('show');
+async function sendResetLink() {
+  const btn = document.getElementById('forgotPwBtn');
   btn.disabled = true;
   btn.textContent = 'Mengirim...';
   try {
-    const data = await apiFetch('/api/auth/forgot-password', {
-      method: 'POST',
-      body: JSON.stringify({ username }),
-    });
-    succEl.textContent = '✓ ' + data.message;
-    succEl.classList.add('show');
-    btn.textContent = 'Terkirim';
+    const data = await apiFetch('/api/auth/send-reset', { method: 'POST' });
+    closeLoginModal();
+    showToast('✓ ' + data.message);
   } catch (err) {
-    errEl.textContent = err.message;
+    showToast('Gagal: ' + err.message);
+  } finally {
     btn.disabled = false;
-    btn.textContent = '✉ Kirim Link Reset';
+    btn.innerHTML = '&#128231; Lupa Password?';
   }
 }
 
