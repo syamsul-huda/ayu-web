@@ -16,10 +16,10 @@ const loginLimiter = rateLimit({
   message: { error: 'Terlalu banyak percobaan login. Coba lagi dalam 15 menit.' },
 });
 
-// Max 3 permintaan reset per IP per jam
+// Max 10 permintaan reset per IP per jam
 const resetLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 3,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Terlalu banyak permintaan reset. Coba lagi dalam 1 jam.' },
