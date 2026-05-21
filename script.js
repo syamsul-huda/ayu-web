@@ -666,15 +666,15 @@ async function showForm(id) {
       document.getElementById('f_dob').value              = p.dob           || '';
       document.getElementById('f_jobTitle').value         = p.jobTitle      || '';
       document.getElementById('f_company').value          = p.company       || '';
-      document.getElementById('f_grade').value            = p.grade         || '';
+      setComboValue('f_grade_sel', 'f_grade_custom', p.grade || '');
       document.getElementById('f_hav').value              = p.hav           || '';
       document.getElementById('f_promotionDate').value    = p.promotionDate || '';
       document.getElementById('f_paYear1').value = p.paYear1 || '2023';
-      document.getElementById('f_paVal1').value  = p.paVal1  || '';
+      setComboValue('f_paVal1_sel', 'f_paVal1_custom', p.paVal1 || '');
       document.getElementById('f_paYear2').value = p.paYear2 || '2024';
-      document.getElementById('f_paVal2').value  = p.paVal2  || '';
+      setComboValue('f_paVal2_sel', 'f_paVal2_custom', p.paVal2 || '');
       document.getElementById('f_paYear3').value = p.paYear3 || '2025';
-      document.getElementById('f_paVal3').value  = p.paVal3  || '';
+      setComboValue('f_paVal3_sel', 'f_paVal3_custom', p.paVal3 || '');
       document.getElementById('f_strength').value         = p.strength      || '';
       document.getElementById('f_afd').value              = p.afd           || '';
       if (p.photo) setPhotoPreview(p.photo);
@@ -703,6 +703,10 @@ function resetForm() {
     document.getElementById(t + 'Body').innerHTML = '';
   });
   setPhotoPreview(null);
+  ['f_paVal1_custom','f_paVal2_custom','f_paVal3_custom','f_grade_custom'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.display = 'none'; el.value = ''; }
+  });
 }
 
 /* ===================================================
@@ -786,15 +790,15 @@ async function saveProfile(e) {
     dob:           document.getElementById('f_dob').value || null,
     jobTitle:      document.getElementById('f_jobTitle').value.trim(),
     company:       document.getElementById('f_company').value.trim(),
-    grade:         document.getElementById('f_grade').value.trim(),
+    grade:         getComboValue('f_grade_sel', 'f_grade_custom'),
     hav:           document.getElementById('f_hav').value.trim(),
     promotionDate: document.getElementById('f_promotionDate').value || null,
     paYear1:       document.getElementById('f_paYear1').value,
-    paVal1:        document.getElementById('f_paVal1').value.trim(),
+    paVal1:        getComboValue('f_paVal1_sel', 'f_paVal1_custom'),
     paYear2:       document.getElementById('f_paYear2').value,
-    paVal2:        document.getElementById('f_paVal2').value.trim(),
+    paVal2:        getComboValue('f_paVal2_sel', 'f_paVal2_custom'),
     paYear3:       document.getElementById('f_paYear3').value,
-    paVal3:        document.getElementById('f_paVal3').value.trim(),
+    paVal3:        getComboValue('f_paVal3_sel', 'f_paVal3_custom'),
     strength:      document.getElementById('f_strength').value.trim(),
     afd:           document.getElementById('f_afd').value.trim(),
     photo:         document.getElementById('photoPreview').dataset.src || null,
@@ -902,6 +906,47 @@ async function viewProfile(id) {
     showView('viewProfile');
   } catch (e) {
     showToast('Gagal memuat profil: ' + e.message);
+  }
+}
+
+/* ===================================================
+   COMBO SELECT (select + free-text fallback)
+=================================================== */
+function handleComboSelect(sel, customId) {
+  const custom = document.getElementById(customId);
+  if (sel.value === '__custom__') {
+    custom.style.display = 'block';
+    custom.value = '';
+    custom.focus();
+  } else {
+    custom.style.display = 'none';
+    custom.value = '';
+  }
+}
+
+function getComboValue(selId, customId) {
+  const sel = document.getElementById(selId);
+  return sel.value === '__custom__'
+    ? document.getElementById(customId).value.trim()
+    : sel.value;
+}
+
+function setComboValue(selId, customId, value) {
+  const sel = document.getElementById(selId);
+  const custom = document.getElementById(customId);
+  const inList = value && Array.from(sel.options).some(o => o.value === value && o.value !== '__custom__' && o.value !== '');
+  if (inList) {
+    sel.value = value;
+    custom.style.display = 'none';
+    custom.value = '';
+  } else if (value) {
+    sel.value = '__custom__';
+    custom.style.display = 'block';
+    custom.value = value;
+  } else {
+    sel.value = '';
+    custom.style.display = 'none';
+    custom.value = '';
   }
 }
 

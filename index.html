@@ -307,13 +307,23 @@
             </div>
             <div class="field-group">
               <label>Grade / HAV</label>
-              <datalist id="gradeList">
-                <option value="4A"><option value="4B"><option value="4C">
-                <option value="4D"><option value="4E"><option value="4F">
-                <option value="5A"><option value="5B"><option value="5C">
-              </datalist>
-              <div style="display:flex;gap:8px">
-                <input type="text" id="f_grade" list="gradeList" placeholder="Pilih / ketik..." autocomplete="off" style="flex:1" />
+              <div style="display:flex;gap:8px;align-items:flex-start">
+                <div class="combo-wrap" style="flex:1">
+                  <select id="f_grade_sel" class="combo-select" onchange="handleComboSelect(this,'f_grade_custom')">
+                    <option value="">— Pilih Grade —</option>
+                    <option value="4A">4A</option>
+                    <option value="4B">4B</option>
+                    <option value="4C">4C</option>
+                    <option value="4D">4D</option>
+                    <option value="4E">4E</option>
+                    <option value="4F">4F</option>
+                    <option value="5A">5A</option>
+                    <option value="5B">5B</option>
+                    <option value="5C">5C</option>
+                    <option value="__custom__">✎ Lainnya...</option>
+                  </select>
+                  <input type="text" id="f_grade_custom" class="combo-custom" placeholder="Ketik grade..." style="display:none" />
+                </div>
                 <input type="text" id="f_hav" placeholder="HAV" style="flex:1" />
               </div>
             </div>
@@ -323,27 +333,51 @@
             </div>
             <div class="field-group">
               <label>PA History</label>
-              <datalist id="paValueList">
-                <option value="C">
-                <option value="C+">
-                <option value="B">
-                <option value="B+">
-                <option value="BS">
-                <option value="BS+">
-                <option value="IST">
-              </datalist>
               <div class="pa-row">
                 <div class="pa-item">
                   <select id="f_paYear1" class="pa-year-select"></select>
-                  <input type="text" id="f_paVal1" list="paValueList" placeholder="Pilih / ketik..." autocomplete="off" />
+                  <select id="f_paVal1_sel" class="combo-select pa-val-select" onchange="handleComboSelect(this,'f_paVal1_custom')">
+                    <option value="">— Pilih —</option>
+                    <option value="C">C</option>
+                    <option value="C+">C+</option>
+                    <option value="B">B</option>
+                    <option value="B+">B+</option>
+                    <option value="BS">BS</option>
+                    <option value="BS+">BS+</option>
+                    <option value="IST">IST</option>
+                    <option value="__custom__">✎ Lainnya...</option>
+                  </select>
+                  <input type="text" id="f_paVal1_custom" class="combo-custom" placeholder="Ketik nilai..." style="display:none" />
                 </div>
                 <div class="pa-item">
                   <select id="f_paYear2" class="pa-year-select"></select>
-                  <input type="text" id="f_paVal2" list="paValueList" placeholder="Pilih / ketik..." autocomplete="off" />
+                  <select id="f_paVal2_sel" class="combo-select pa-val-select" onchange="handleComboSelect(this,'f_paVal2_custom')">
+                    <option value="">— Pilih —</option>
+                    <option value="C">C</option>
+                    <option value="C+">C+</option>
+                    <option value="B">B</option>
+                    <option value="B+">B+</option>
+                    <option value="BS">BS</option>
+                    <option value="BS+">BS+</option>
+                    <option value="IST">IST</option>
+                    <option value="__custom__">✎ Lainnya...</option>
+                  </select>
+                  <input type="text" id="f_paVal2_custom" class="combo-custom" placeholder="Ketik nilai..." style="display:none" />
                 </div>
                 <div class="pa-item">
                   <select id="f_paYear3" class="pa-year-select"></select>
-                  <input type="text" id="f_paVal3" list="paValueList" placeholder="Pilih / ketik..." autocomplete="off" />
+                  <select id="f_paVal3_sel" class="combo-select pa-val-select" onchange="handleComboSelect(this,'f_paVal3_custom')">
+                    <option value="">— Pilih —</option>
+                    <option value="C">C</option>
+                    <option value="C+">C+</option>
+                    <option value="B">B</option>
+                    <option value="B+">B+</option>
+                    <option value="BS">BS</option>
+                    <option value="BS+">BS+</option>
+                    <option value="IST">IST</option>
+                    <option value="__custom__">✎ Lainnya...</option>
+                  </select>
+                  <input type="text" id="f_paVal3_custom" class="combo-custom" placeholder="Ketik nilai..." style="display:none" />
                 </div>
               </div>
             </div>

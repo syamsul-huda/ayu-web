@@ -199,6 +199,25 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #fdf3e8; color: #
   transition: border-color .2s;
 }
 .pa-year-select:focus { border-color: #00897b; }
+.combo-wrap { display: flex; flex-direction: column; }
+.combo-select {
+  width: 100%;
+  border: 1.5px solid #a8dad6; border-radius: 8px;
+  padding: 8px 10px; font-size: .88rem; outline: none;
+  background: #fff; font-family: inherit; cursor: pointer;
+  transition: border-color .2s, box-shadow .2s; color: #1a2e28;
+}
+.combo-select:focus { border-color: #00897b; box-shadow: 0 0 0 3px rgba(0,137,123,.1); }
+.pa-val-select { padding: 6px 8px; font-size: .83rem; margin-top: 2px; }
+.combo-custom {
+  width: 100%; margin-top: 4px;
+  border: 1.5px solid #d4527f; border-radius: 8px;
+  padding: 7px 10px; font-size: .88rem; outline: none;
+  font-family: inherit; background: #fff;
+  transition: border-color .2s, box-shadow .2s;
+}
+.combo-custom:focus { border-color: #d4527f; box-shadow: 0 0 0 3px rgba(212,82,127,.12); }
+.pa-row .pa-item select { width: 100%; }
 
 .section { margin-bottom: 22px; }
 .section-title {
