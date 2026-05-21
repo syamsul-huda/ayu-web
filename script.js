@@ -1078,8 +1078,14 @@ async function initApp() {
 
   buildPaYearSelects();
 
-  const resetToken = new URLSearchParams(window.location.search).get('reset');
-  if (resetToken) { showResetPasswordModal(resetToken); }
+  const hashResetMatch = window.location.hash.match(/^#reset=([a-f0-9]{64})$/);
+  const resetToken = hashResetMatch
+    ? hashResetMatch[1]
+    : new URLSearchParams(window.location.search).get('reset');
+  if (resetToken) {
+    history.replaceState(null, '', window.location.pathname);
+    showResetPasswordModal(resetToken);
+  }
 
   const navType = (performance.getEntriesByType('navigation')[0] || {}).type;
   const isRefresh = navType === 'reload';
