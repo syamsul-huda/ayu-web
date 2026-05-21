@@ -1022,13 +1022,15 @@ async function initApp() {
   }
 
   buildPaYearSelects();
+  const navType = (performance.getEntriesByType('navigation')[0] || {}).type;
+  const isRefresh = navType === 'reload';
   const hash = window.location.hash;
-  const artikelMatch = hash.match(/^#artikel-(.+)$/);
+  const artikelMatch = !isRefresh && hash.match(/^#artikel-(.+)$/);
   if (artikelMatch) {
-    const targetId = artikelMatch[1];
-    const found = artikels.find(x => String(x.id) === targetId);
+    const found = artikels.find(x => String(x.id) === artikelMatch[1]);
     if (found) { viewArtikel(found.id); return; }
   }
+  if (hash) history.replaceState(null, '', window.location.pathname);
   renderArtikelList();
 }
 
