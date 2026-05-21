@@ -307,8 +307,13 @@
             </div>
             <div class="field-group">
               <label>Grade / HAV</label>
+              <datalist id="gradeList">
+                <option value="4A"><option value="4B"><option value="4C">
+                <option value="4D"><option value="4E"><option value="4F">
+                <option value="5A"><option value="5B"><option value="5C">
+              </datalist>
               <div style="display:flex;gap:8px">
-                <input type="text" id="f_grade" placeholder="Grade" style="flex:1" />
+                <input type="text" id="f_grade" list="gradeList" placeholder="Pilih / ketik..." autocomplete="off" style="flex:1" />
                 <input type="text" id="f_hav" placeholder="HAV" style="flex:1" />
               </div>
             </div>
