@@ -318,18 +318,27 @@
             </div>
             <div class="field-group">
               <label>PA History</label>
+              <datalist id="paValueList">
+                <option value="C">
+                <option value="C+">
+                <option value="B">
+                <option value="B+">
+                <option value="BS">
+                <option value="BS+">
+                <option value="IST">
+              </datalist>
               <div class="pa-row">
                 <div class="pa-item">
                   <select id="f_paYear1" class="pa-year-select"></select>
-                  <input type="text" id="f_paVal1" placeholder="-" />
+                  <input type="text" id="f_paVal1" list="paValueList" placeholder="Pilih / ketik..." autocomplete="off" />
                 </div>
                 <div class="pa-item">
                   <select id="f_paYear2" class="pa-year-select"></select>
-                  <input type="text" id="f_paVal2" placeholder="-" />
+                  <input type="text" id="f_paVal2" list="paValueList" placeholder="Pilih / ketik..." autocomplete="off" />
                 </div>
                 <div class="pa-item">
                   <select id="f_paYear3" class="pa-year-select"></select>
-                  <input type="text" id="f_paVal3" placeholder="-" />
+                  <input type="text" id="f_paVal3" list="paValueList" placeholder="Pilih / ketik..." autocomplete="off" />
                 </div>
               </div>
             </div>
