@@ -190,6 +190,15 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #fdf3e8; color: #
 .pa-row .pa-item { flex: 1; }
 .pa-row .pa-item label { font-size: .75rem; color: #7aada5; }
 .pa-row .pa-item input { width: 100%; }
+.pa-year-select {
+  width: 100%; margin-bottom: 4px;
+  border: 1.5px solid #a8dad6; border-radius: 6px;
+  padding: 5px 6px; font-size: .8rem; outline: none;
+  background: #e0f5f2; color: #00695c; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  transition: border-color .2s;
+}
+.pa-year-select:focus { border-color: #00897b; }
 
 .section { margin-bottom: 22px; }
 .section-title {

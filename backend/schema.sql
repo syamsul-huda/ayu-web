@@ -15,9 +15,12 @@ CREATE TABLE IF NOT EXISTS profiles (
   grade VARCHAR(50),
   hav VARCHAR(50),
   promotion_date DATE,
-  pa_2023 VARCHAR(50),
-  pa_2024 VARCHAR(50),
-  pa_2025 VARCHAR(50),
+  pa_year1 VARCHAR(20) DEFAULT '2023',
+  pa_val1  VARCHAR(50),
+  pa_year2 VARCHAR(20) DEFAULT '2024',
+  pa_val2  VARCHAR(50),
+  pa_year3 VARCHAR(20) DEFAULT '2025',
+  pa_val3  VARCHAR(50),
   strength TEXT,
   afd TEXT,
   photo TEXT,
@@ -98,3 +101,14 @@ CREATE TABLE IF NOT EXISTS portos (
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Migration: ganti kolom pa_2023/pa_2024/pa_2025 ke pa_year+val yang dinamis
+-- Jalankan ini sekali pada database yang sudah ada:
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS pa_year1 VARCHAR(20) DEFAULT '2023';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS pa_val1  VARCHAR(50);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS pa_year2 VARCHAR(20) DEFAULT '2024';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS pa_val2  VARCHAR(50);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS pa_year3 VARCHAR(20) DEFAULT '2025';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS pa_val3  VARCHAR(50);
+-- Migrasi data lama (opsional):
+UPDATE profiles SET pa_val1 = pa_2023, pa_val2 = pa_2024, pa_val3 = pa_2025 WHERE pa_val1 IS NULL;

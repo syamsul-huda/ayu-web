@@ -13,9 +13,12 @@ function mapProfile(p) {
     grade: p.grade || '',
     hav: p.hav || '',
     promotionDate: p.promotion_date ? p.promotion_date.toISOString().split('T')[0] : '',
-    pa2023: p.pa_2023 || '',
-    pa2024: p.pa_2024 || '',
-    pa2025: p.pa_2025 || '',
+    paYear1: p.pa_year1 || '2023',
+    paVal1:  p.pa_val1  || '',
+    paYear2: p.pa_year2 || '2024',
+    paVal2:  p.pa_val2  || '',
+    paYear3: p.pa_year3 || '2025',
+    paVal3:  p.pa_val3  || '',
     strength: p.strength || '',
     afd: p.afd || '',
     photo: p.photo || null,
@@ -76,12 +79,12 @@ router.post('/', requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const { npk, name, dob, jobTitle, company, grade, hav, promotionDate, pa2023, pa2024, pa2025, strength, afd, photo, edu, training, others, work, idp } = req.body;
+    const { npk, name, dob, jobTitle, company, grade, hav, promotionDate, paYear1, paVal1, paYear2, paVal2, paYear3, paVal3, strength, afd, photo, edu, training, others, work, idp } = req.body;
 
     const result = await client.query(
-      `INSERT INTO profiles (npk, name, dob, job_title, company, grade, hav, promotion_date, pa_2023, pa_2024, pa_2025, strength, afd, photo)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING id`,
-      [npk, name, dob || null, jobTitle, company, grade, hav, promotionDate || null, pa2023, pa2024, pa2025, strength, afd, photo || null]
+      `INSERT INTO profiles (npk, name, dob, job_title, company, grade, hav, promotion_date, pa_year1, pa_val1, pa_year2, pa_val2, pa_year3, pa_val3, strength, afd, photo)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING id`,
+      [npk, name, dob || null, jobTitle, company, grade, hav, promotionDate || null, paYear1||'2023', paVal1||'', paYear2||'2024', paVal2||'', paYear3||'2025', paVal3||'', strength, afd, photo || null]
     );
     const profileId = result.rows[0].id;
     await insertSubTables(client, profileId, { edu, training, others, work, idp });
@@ -101,13 +104,13 @@ router.put('/:id', requireAuth, async (req, res) => {
   try {
     await client.query('BEGIN');
     const { id } = req.params;
-    const { npk, name, dob, jobTitle, company, grade, hav, promotionDate, pa2023, pa2024, pa2025, strength, afd, photo, edu, training, others, work, idp } = req.body;
+    const { npk, name, dob, jobTitle, company, grade, hav, promotionDate, paYear1, paVal1, paYear2, paVal2, paYear3, paVal3, strength, afd, photo, edu, training, others, work, idp } = req.body;
 
     const result = await client.query(
       `UPDATE profiles SET npk=$1, name=$2, dob=$3, job_title=$4, company=$5, grade=$6, hav=$7,
-       promotion_date=$8, pa_2023=$9, pa_2024=$10, pa_2025=$11, strength=$12, afd=$13, photo=$14,
-       updated_at=NOW() WHERE id=$15 RETURNING id`,
-      [npk, name, dob || null, jobTitle, company, grade, hav, promotionDate || null, pa2023, pa2024, pa2025, strength, afd, photo || null, id]
+       promotion_date=$8, pa_year1=$9, pa_val1=$10, pa_year2=$11, pa_val2=$12, pa_year3=$13, pa_val3=$14,
+       strength=$15, afd=$16, photo=$17, updated_at=NOW() WHERE id=$18 RETURNING id`,
+      [npk, name, dob || null, jobTitle, company, grade, hav, promotionDate || null, paYear1||'2023', paVal1||'', paYear2||'2024', paVal2||'', paYear3||'2025', paVal3||'', strength, afd, photo || null, id]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Profil tidak ditemukan' });
 

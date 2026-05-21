@@ -669,9 +669,12 @@ async function showForm(id) {
       document.getElementById('f_grade').value            = p.grade         || '';
       document.getElementById('f_hav').value              = p.hav           || '';
       document.getElementById('f_promotionDate').value    = p.promotionDate || '';
-      document.getElementById('f_pa2023').value           = p.pa2023        || '';
-      document.getElementById('f_pa2024').value           = p.pa2024        || '';
-      document.getElementById('f_pa2025').value           = p.pa2025        || '';
+      document.getElementById('f_paYear1').value = p.paYear1 || '2023';
+      document.getElementById('f_paVal1').value  = p.paVal1  || '';
+      document.getElementById('f_paYear2').value = p.paYear2 || '2024';
+      document.getElementById('f_paVal2').value  = p.paVal2  || '';
+      document.getElementById('f_paYear3').value = p.paYear3 || '2025';
+      document.getElementById('f_paVal3').value  = p.paVal3  || '';
       document.getElementById('f_strength').value         = p.strength      || '';
       document.getElementById('f_afd').value              = p.afd           || '';
       if (p.photo) setPhotoPreview(p.photo);
@@ -786,9 +789,12 @@ async function saveProfile(e) {
     grade:         document.getElementById('f_grade').value.trim(),
     hav:           document.getElementById('f_hav').value.trim(),
     promotionDate: document.getElementById('f_promotionDate').value || null,
-    pa2023:        document.getElementById('f_pa2023').value.trim(),
-    pa2024:        document.getElementById('f_pa2024').value.trim(),
-    pa2025:        document.getElementById('f_pa2025').value.trim(),
+    paYear1:       document.getElementById('f_paYear1').value,
+    paVal1:        document.getElementById('f_paVal1').value.trim(),
+    paYear2:       document.getElementById('f_paYear2').value,
+    paVal2:        document.getElementById('f_paVal2').value.trim(),
+    paYear3:       document.getElementById('f_paYear3').value,
+    paVal3:        document.getElementById('f_paVal3').value.trim(),
     strength:      document.getElementById('f_strength').value.trim(),
     afd:           document.getElementById('f_afd').value.trim(),
     photo:         document.getElementById('photoPreview').dataset.src || null,
@@ -858,8 +864,8 @@ async function viewProfile(id) {
       +           '<span class="prof-label">Grade / HAV</span><span class="prof-colon">: ' + esc(p.grade || '-') + ' / ' + esc(p.hav || '-') + '</span>'
       +           '<span class="prof-label">Promotion date</span><span class="prof-colon">: ' + promStr + '</span>'
       +           '<span class="prof-label">PA History</span>'
-      +           '<span class="prof-colon">:<div class="pa-display" style="margin-top:4px"><div class="pa-cell head">2023</div><div class="pa-cell head">2024</div><div class="pa-cell head">2025</div></div>'
-      +           '<div class="pa-display"><div class="pa-cell">' + esc(p.pa2023||'-') + '</div><div class="pa-cell">' + esc(p.pa2024||'-') + '</div><div class="pa-cell">' + esc(p.pa2025||'-') + '</div></div></span>'
+      +           '<span class="prof-colon">:<div class="pa-display" style="margin-top:4px"><div class="pa-cell head">' + esc(p.paYear1||'2023') + '</div><div class="pa-cell head">' + esc(p.paYear2||'2024') + '</div><div class="pa-cell head">' + esc(p.paYear3||'2025') + '</div></div>'
+      +           '<div class="pa-display"><div class="pa-cell">' + esc(p.paVal1||'-') + '</div><div class="pa-cell">' + esc(p.paVal2||'-') + '</div><div class="pa-cell">' + esc(p.paVal3||'-') + '</div></div></span>'
       +         '</div></div>'
       +         '<div class="prof-photo">' + photoHtml + '</div>'
       +       '</div>'
@@ -930,6 +936,21 @@ function showToast(msg) {
 /* ===================================================
    INIT
 =================================================== */
+function buildPaYearSelects() {
+  const now = new Date().getFullYear();
+  const defaults = ['2023', '2024', '2025'];
+  ['f_paYear1', 'f_paYear2', 'f_paYear3'].forEach((id, i) => {
+    const sel = document.getElementById(id);
+    for (let y = 2015; y <= now + 5; y++) {
+      const opt = document.createElement('option');
+      opt.value = String(y);
+      opt.textContent = String(y);
+      if (String(y) === defaults[i]) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  });
+}
+
 async function initApp() {
   try {
     const [a, p] = await Promise.all([
@@ -955,6 +976,7 @@ async function initApp() {
     }
   }
 
+  buildPaYearSelects();
   const hash = window.location.hash;
   const artikelMatch = hash.match(/^#artikel-(.+)$/);
   if (artikelMatch) {
