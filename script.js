@@ -3,9 +3,30 @@
 =================================================== */
 const TOKEN_KEY = 'ao_token_v1';
 
-function getToken()      { return localStorage.getItem(TOKEN_KEY); }
-function setToken(t)     { localStorage.setItem(TOKEN_KEY, t); }
-function removeToken()   { localStorage.removeItem(TOKEN_KEY); }
+// sessionStorage: otomatis bersih saat tab/browser ditutup
+function getToken()      { return sessionStorage.getItem(TOKEN_KEY); }
+function setToken(t)     { sessionStorage.setItem(TOKEN_KEY, t); }
+function removeToken()   { sessionStorage.removeItem(TOKEN_KEY); }
+
+// Auto logout setelah 1 jam tidak aktif
+const IDLE_MS = 60 * 60 * 1000;
+let idleTimer = null;
+
+function resetIdleTimer() {
+  if (!getToken()) return;
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    removeToken();
+    isLoggedIn = false;
+    document.body.classList.remove('admin-logged-in');
+    updateAuthButton();
+    showToast('Sesi berakhir karena tidak aktif. Silakan login kembali.');
+  }, IDLE_MS);
+}
+
+['click', 'keydown', 'mousemove', 'touchstart', 'scroll'].forEach(ev =>
+  document.addEventListener(ev, resetIdleTimer, { passive: true })
+);
 
 async function apiFetch(path, options = {}) {
   const token = getToken();
@@ -126,6 +147,7 @@ async function doLogin(e) {
     document.body.classList.add('admin-logged-in');
     updateAuthButton();
     closeLoginModal();
+    resetIdleTimer();
     showToast('Selamat datang, Admin!');
 
     const profileData = await apiFetch('/api/profiles');
@@ -1071,6 +1093,7 @@ async function initApp() {
       isLoggedIn = true;
       document.body.classList.add('admin-logged-in');
       updateAuthButton();
+      resetIdleTimer();
     } catch {
       removeToken();
     }
