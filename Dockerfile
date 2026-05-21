@@ -3,7 +3,7 @@ WORKDIR /app
 COPY backend/package*.json ./
 RUN npm install --only=production
 COPY backend/ .
-COPY index.html styles.css script.js ./public/
+COPY index.html styles.css script.js reset.html ./public/
 RUN mkdir -p uploads
 EXPOSE 3001
 CMD ["node", "server.js"]

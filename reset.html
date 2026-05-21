@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atur Password Baru – Ayu Fitriah</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #e0f5f2 0%, #f5f0eb 100%);
+      font-family: 'Segoe UI', sans-serif;
+      padding: 24px;
+    }
+    .card {
+      background: #fffaf5;
+      border-radius: 20px;
+      padding: 36px 32px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(0,80,60,.12);
+      text-align: center;
+    }
+    .icon { font-size: 2.4rem; margin-bottom: 12px; }
+    h2 { color: #00695c; margin-bottom: 6px; font-size: 1.4rem; }
+    p  { color: #6a8a82; font-size: .9rem; margin-bottom: 24px; }
+    label { display: block; text-align: left; font-size: .85rem; color: #5a7a72; font-weight: 600; margin-bottom: 4px; }
+    .field { margin-bottom: 16px; }
+    .pw-wrap { position: relative; }
+    input[type=password], input[type=text] {
+      width: 100%; padding: 11px 44px 11px 14px;
+      border: 1.5px solid #b2d8d0; border-radius: 10px;
+      font-size: .95rem; outline: none; background: #fff;
+      transition: border-color .2s;
+    }
+    input:focus { border-color: #00897b; }
+    .pw-toggle {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; font-size: 1rem; color: #7aa;
+      padding: 4px;
+    }
+    .error { color: #c0392b; font-size: .85rem; margin-bottom: 12px; min-height: 20px; text-align: left; }
+    .btn {
+      width: 100%; padding: 13px;
+      background: linear-gradient(135deg, #00695c, #00897b);
+      color: #fff; border: none; border-radius: 12px;
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: opacity .2s;
+    }
+    .btn:disabled { opacity: .6; cursor: not-allowed; }
+    .success { color: #00695c; font-weight: 600; font-size: .95rem; margin-top: 16px; }
+    .back-link { display: block; margin-top: 20px; color: #00897b; font-size: .88rem; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">🔑</div>
+    <h2>Buat Password Baru</h2>
+    <p>Masukkan password baru untuk akun Anda</p>
+
+    <form id="resetForm" onsubmit="doReset(event)">
+      <div class="field">
+        <label>Password Baru</label>
+        <div class="pw-wrap">
+          <input type="password" id="pw1" placeholder="Minimal 6 karakter" required minlength="6" autocomplete="new-password" />
+          <button type="button" class="pw-toggle" onclick="togglePw('pw1')">👁</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Konfirmasi Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="pw2" placeholder="Ulangi password baru" required autocomplete="new-password" />
+          <button type="button" class="pw-toggle" onclick="togglePw('pw2')">👁</button>
+        </div>
+      </div>
+      <div class="error" id="errMsg"></div>
+      <button type="submit" class="btn" id="submitBtn">✓ Simpan Password Baru</button>
+    </form>
+
+    <div class="success" id="successMsg" style="display:none"></div>
+    <a class="back-link" href="/">← Kembali ke beranda</a>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const token  = params.get('token');
+
+    if (!token) {
+      document.getElementById('errMsg').textContent = 'Link tidak valid. Minta ulang dari halaman utama.';
+      document.getElementById('submitBtn').disabled = true;
+    }
+
+    function togglePw(id) {
+      const el = document.getElementById(id);
+      el.type = el.type === 'password' ? 'text' : 'password';
+    }
+
+    async function doReset(e) {
+      e.preventDefault();
+      const pw1    = document.getElementById('pw1').value;
+      const pw2    = document.getElementById('pw2').value;
+      const errEl  = document.getElementById('errMsg');
+      const btn    = document.getElementById('submitBtn');
+      errEl.textContent = '';
+
+      if (pw1 !== pw2) {
+        errEl.textContent = 'Konfirmasi password tidak cocok.';
+        document.getElementById('pw2').value = '';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Menyimpan...';
+
+      try {
+        const res = await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, newPassword: pw1 }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal reset password');
+
+        document.getElementById('resetForm').style.display = 'none';
+        const suc = document.getElementById('successMsg');
+        suc.textContent = '✓ Password berhasil diubah! Silakan login.';
+        suc.style.display = 'block';
+      } catch (err) {
+        errEl.textContent = err.message;
+        btn.disabled = false;
+        btn.textContent = '✓ Simpan Password Baru';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -104,7 +104,7 @@ router.post('/send-reset', resetLimiter, async (req, res) => {
     await pool.query('DELETE FROM password_reset_tokens WHERE user_id = $1', [user.id]);
     await pool.query('INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES ($1,$2,$3)', [user.id, token, expiresAt]);
 
-    const resetUrl = `${process.env.APP_URL || 'http://localhost:3001'}/#reset=${token}`;
+    const resetUrl = `${process.env.APP_URL || 'http://localhost:3001'}/reset?token=${token}`;
     const transporter = createTransporter();
 
     await transporter.sendMail({
@@ -167,7 +167,7 @@ router.post('/forgot-password', resetLimiter, async (req, res) => {
       [user.id, token, expiresAt]
     );
 
-    const resetUrl = `${process.env.APP_URL || 'http://localhost:3001'}/#reset=${token}`;
+    const resetUrl = `${process.env.APP_URL || 'http://localhost:3001'}/reset?token=${token}`;
     const transporter = createTransporter();
 
     await transporter.sendMail({

@@ -47,6 +47,10 @@ app.use('/api/artikels', require('./routes/artikels'));
 app.use('/api/portos', require('./routes/portos'));
 app.use('/api/upload', require('./routes/upload'));
 
+app.get('/reset', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'reset.html'));
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
