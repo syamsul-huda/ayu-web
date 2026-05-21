@@ -196,8 +196,8 @@ async function sendResetLink() {
    RESET PASSWORD (dari link email)
 =================================================== */
 function showResetPasswordModal(token) {
-  document.getElementById('resetToken').value = token;
   document.getElementById('resetPasswordForm').reset();
+  document.getElementById('resetToken').value = token;
   document.getElementById('rpError').textContent = '';
   document.getElementById('resetPasswordModal').classList.add('show');
 }
