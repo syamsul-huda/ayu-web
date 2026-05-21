@@ -81,7 +81,7 @@ function showSection(section) {
 }
 
 function goBack() {
-  if (currentSection === 'artikel')         { renderArtikelList();    showView('viewArtikelList'); }
+  if (currentSection === 'artikel')         { history.pushState(null, '', window.location.pathname); renderArtikelList();    showView('viewArtikelList'); }
   else if (currentSection === 'portofolio') { renderPortofolioList(); showView('viewPortofolioList'); }
   else {
     if (!isLoggedIn) { showLoginModal(); return; }
@@ -396,8 +396,9 @@ async function saveArtikel(e) {
    ARTIKEL — DETAIL
 =================================================== */
 function viewArtikel(id) {
-  const a = artikels.find(x => x.id === id);
+  const a = artikels.find(x => String(x.id) === String(id));
   if (!a) return;
+  history.pushState(null, '', '#artikel-' + a.id);
   const coverHtml = a.cover ? '<div class="detail-cover"><img src="' + a.cover + '" alt="cover" /></div>' : '';
   const tags = (a.tags || '').split(',').filter(t => t.trim()).map(t => '<span class="item-tag">' + esc(t.trim()) + '</span>').join('');
   const metaParts = [
@@ -409,6 +410,18 @@ function viewArtikel(id) {
     ? '<button class="btn-primary" onclick="showArtikelForm(\'' + a.id + '\')">&#9998; Edit</button>'
       + '<button class="btn-danger" onclick="openDeleteModal(\'' + a.id + '\',\'artikel\',\'Hapus Artikel\',\'Yakin ingin menghapus artikel ini?\')">&#128465; Hapus</button>'
     : '';
+  const sid = String(a.id);
+  const shareSection =
+    '<div class="share-section">'
+    + '<div class="share-label">Bagikan Artikel</div>'
+    + '<div class="share-buttons">'
+    + '<button class="share-btn share-wa"      onclick="shareArtikel(\'whatsapp\',\'' + sid + '\')"><span class="share-icon">&#128241;</span>WhatsApp</button>'
+    + '<button class="share-btn share-x"       onclick="shareArtikel(\'x\',\''        + sid + '\')"><span class="share-icon">&#120143;</span>X</button>'
+    + '<button class="share-btn share-threads" onclick="shareArtikel(\'threads\',\''  + sid + '\')"><span class="share-icon">&#64;</span>Threads</button>'
+    + '<button class="share-btn share-ig"      onclick="shareArtikel(\'instagram\',\''+ sid + '\')"><span class="share-icon">&#128247;</span>Instagram</button>'
+    + '<button class="share-btn share-tiktok"  onclick="shareArtikel(\'tiktok\',\''   + sid + '\')"><span class="share-icon">&#9835;</span>TikTok</button>'
+    + '<button class="share-btn share-copy"    onclick="shareArtikel(\'copy\',\''     + sid + '\')"><span class="share-icon">&#128279;</span>Salin Link</button>'
+    + '</div></div>';
   document.getElementById('artikelDetailPage').innerHTML =
     coverHtml
     + '<div class="detail-body">'
@@ -417,11 +430,53 @@ function viewArtikel(id) {
     + '<div class="detail-meta">' + metaParts.join(' &middot; ') + '</div>'
     + '<div class="detail-content">' + esc(a.content) + '</div>'
     + (tags ? '<div class="detail-tags">' + tags + '</div>' : '')
+    + shareSection
     + '<div class="prof-actions">'
     + '<button class="btn-secondary" onclick="goBack()">&#8592; Kembali</button>'
     + adminBtns
     + '</div></div>';
   showView('viewArtikelDetail');
+}
+
+/* ===================================================
+   SHARE ARTIKEL
+=================================================== */
+function shareArtikel(platform, articleId) {
+  const a = artikels.find(x => String(x.id) === String(articleId));
+  if (!a) return;
+  const url  = window.location.origin + window.location.pathname + '#artikel-' + articleId;
+  const title = a.title;
+  const text  = title + '\n' + url;
+
+  function copyToClipboard(str, toastMsg) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(str).then(() => showToast(toastMsg)).catch(() => legacyCopy(str, toastMsg));
+    } else {
+      legacyCopy(str, toastMsg);
+    }
+  }
+  function legacyCopy(str, toastMsg) {
+    const ta = document.createElement('textarea');
+    ta.value = str; ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); showToast(toastMsg); } catch { showToast('Salin link: ' + str); }
+    document.body.removeChild(ta);
+  }
+
+  switch (platform) {
+    case 'whatsapp':
+      window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank'); break;
+    case 'x':
+      window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(title) + '&url=' + encodeURIComponent(url), '_blank'); break;
+    case 'threads':
+      window.open('https://www.threads.net/intent/post?text=' + encodeURIComponent(text), '_blank'); break;
+    case 'instagram':
+      copyToClipboard(url, 'Link disalin! Buka Instagram & tempel di caption.'); break;
+    case 'tiktok':
+      copyToClipboard(url, 'Link disalin! Buka TikTok & tempel di bio/caption.'); break;
+    case 'copy':
+      copyToClipboard(url, 'Link berhasil disalin!'); break;
+  }
 }
 
 /* ===================================================
@@ -900,6 +955,13 @@ async function initApp() {
     }
   }
 
+  const hash = window.location.hash;
+  const artikelMatch = hash.match(/^#artikel-(.+)$/);
+  if (artikelMatch) {
+    const targetId = artikelMatch[1];
+    const found = artikels.find(x => String(x.id) === targetId);
+    if (found) { viewArtikel(found.id); return; }
+  }
   renderArtikelList();
 }
 

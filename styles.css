@@ -585,6 +585,50 @@ body.admin-logged-in .admin-only { display: inline-flex !important; }
 }
 .footer-credit { font-size: .72rem; color: #c2dad6; }
 
+/* ===== SHARE SECTION ===== */
+.share-section {
+  margin-top: 24px;
+  padding: 18px 0 4px;
+  border-top: 1px solid #e0f5f2;
+}
+.share-label {
+  font-size: .78rem;
+  font-weight: 700;
+  color: #a8c4bc;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  margin-bottom: 10px;
+}
+.share-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  font-size: .82rem;
+  font-weight: 600;
+  transition: opacity .2s, transform .15s, box-shadow .2s;
+  color: #fff;
+  white-space: nowrap;
+}
+.share-btn:hover { opacity: .88; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.18); }
+.share-btn:active { transform: translateY(0); }
+.share-btn .share-icon { font-size: 1rem; line-height: 1; }
+.share-wa      { background: #25d366; }
+.share-x       { background: #000; }
+.share-threads { background: #1c1c1c; }
+.share-ig      { background: linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%); }
+.share-tiktok  { background: #010101; box-shadow: 2px 2px 0 #fe2c55, -2px -2px 0 #25f4ee; }
+.share-tiktok:hover { box-shadow: 0 4px 12px rgba(0,0,0,.3); }
+.share-copy    { background: #00695c; }
+
 /* ===== PRINT / PDF ===== */
 @media print {
   @page { size: 297mm 167mm; margin: 7mm 9mm; }
