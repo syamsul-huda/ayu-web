@@ -3,8 +3,27 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const rateLimit = require('express-rate-limit');
 const pool = require('../db');
 const requireAuth = require('../middleware/auth');
+
+// Max 10 percobaan login per IP per 15 menit
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Terlalu banyak percobaan login. Coba lagi dalam 15 menit.' },
+});
+
+// Max 3 permintaan reset per IP per jam
+const resetLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Terlalu banyak permintaan reset. Coba lagi dalam 1 jam.' },
+});
 
 function createTransporter() {
   return nodemailer.createTransport({
@@ -15,11 +34,11 @@ function createTransporter() {
   });
 }
 
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username dan password diperlukan' });
-  }
+  if (!username || !password) return res.status(400).json({ error: 'Username dan password diperlukan' });
+  if (typeof username !== 'string' || username.length > 50)  return res.status(400).json({ error: 'Username tidak valid' });
+  if (typeof password !== 'string' || password.length > 128) return res.status(400).json({ error: 'Password tidak valid' });
   try {
     const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
     if (!result.rows.length) {
@@ -44,12 +63,10 @@ router.post('/login', async (req, res) => {
 
 router.post('/change-password', requireAuth, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
-  if (!currentPassword || !newPassword) {
-    return res.status(400).json({ error: 'Semua field diperlukan' });
-  }
-  if (newPassword.length < 6) {
-    return res.status(400).json({ error: 'Password baru minimal 6 karakter' });
-  }
+  if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Semua field diperlukan' });
+  if (typeof newPassword !== 'string' || newPassword.length < 6)   return res.status(400).json({ error: 'Password baru minimal 6 karakter' });
+  if (newPassword.length > 128) return res.status(400).json({ error: 'Password terlalu panjang' });
+  if (typeof currentPassword !== 'string' || currentPassword.length > 128) return res.status(400).json({ error: 'Password tidak valid' });
   try {
     const result = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
     const user = result.rows[0];
@@ -69,7 +86,7 @@ router.post('/change-password', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/send-reset', async (req, res) => {
+router.post('/send-reset', resetLimiter, async (req, res) => {
   if (!process.env.ADMIN_EMAIL) return res.status(500).json({ error: 'Konfigurasi ADMIN_EMAIL belum diatur di server.' });
   try {
     const result = await pool.query('SELECT id, username FROM users LIMIT 1');
@@ -130,7 +147,7 @@ router.post('/send-reset', async (req, res) => {
   }
 });
 
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', resetLimiter, async (req, res) => {
   const { username } = req.body;
   if (!username) return res.status(400).json({ error: 'Username diperlukan' });
   if (!process.env.ADMIN_EMAIL) return res.status(500).json({ error: 'Konfigurasi ADMIN_EMAIL belum diatur di server.' });
@@ -184,7 +201,9 @@ router.post('/forgot-password', async (req, res) => {
 router.post('/reset-password', async (req, res) => {
   const { token, newPassword } = req.body;
   if (!token || !newPassword) return res.status(400).json({ error: 'Token dan password diperlukan' });
-  if (newPassword.length < 6) return res.status(400).json({ error: 'Password minimal 6 karakter' });
+  if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) return res.status(400).json({ error: 'Token tidak valid' });
+  if (typeof newPassword !== 'string' || newPassword.length < 6)   return res.status(400).json({ error: 'Password minimal 6 karakter' });
+  if (newPassword.length > 128) return res.status(400).json({ error: 'Password terlalu panjang' });
 
   try {
     const result = await pool.query(

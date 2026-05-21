@@ -3,12 +3,54 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcrypt');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const pool = require('./db');
 
 const app = express();
-app.use(express.json({ limit: '10mb' }));
+
+// Trust reverse proxy (NAS/nginx) untuk IP yang akurat
+app.set('trust proxy', 1);
+
+// Security headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc:  ["'self'", "'unsafe-inline'"],
+      styleSrc:   ["'self'", "'unsafe-inline'"],
+      imgSrc:     ["'self'", "data:", "blob:", "*"],
+      connectSrc: ["'self'"],
+      fontSrc:    ["'self'"],
+      objectSrc:  ["'none'"],
+      frameSrc:   ["'none'"],
+      baseUri:    ["'self'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
+
+// Rate limiter umum untuk semua /api
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 menit
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Terlalu banyak permintaan, coba lagi dalam 15 menit.' },
+});
+app.use('/api', apiLimiter);
+
+// Body size limit — cegah payload bomb
+app.use(express.json({ limit: '2mb' }));
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Cache control untuk uploads (bukan kode)
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Cache-Control', 'public, max-age=31536000');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  next();
+});
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api/auth', require('./routes/auth'));
@@ -40,6 +82,14 @@ const PORT = process.env.PORT || 3001;
 initDb()
   .then(() => {
     app.listen(PORT, () => console.log(`Ayu backend berjalan di port ${PORT}`));
+    // Hapus reset token kadaluarsa setiap jam
+    setInterval(async () => {
+      try {
+        await pool.query('DELETE FROM password_reset_tokens WHERE expires_at < NOW()');
+      } catch (err) {
+        console.error('Token cleanup error:', err.message);
+      }
+    }, 60 * 60 * 1000);
   })
   .catch(err => {
     console.error('Gagal inisialisasi database:', err.message);
