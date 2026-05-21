@@ -560,6 +560,21 @@ body.admin-logged-in .admin-only { display: inline-flex !important; }
   font-size: .78rem; color: #5a9a8e;
 }
 .login-hint strong { color: #00695c; }
+.forgot-pw-link {
+  display: block; margin-top: 14px;
+  background: none; border: none; cursor: pointer;
+  color: #a8c4bc; font-size: .82rem;
+  text-decoration: underline; text-underline-offset: 3px;
+  transition: color .2s; padding: 0;
+}
+.forgot-pw-link:hover { color: #00695c; }
+.login-success {
+  color: #00695c; font-size: .83rem; font-weight: 600;
+  min-height: 22px; text-align: left; padding: 2px 0;
+  background: #e0f5f2; border-radius: 8px;
+  padding: 8px 12px; margin: 4px 0; display: none;
+}
+.login-success.show { display: block; }
 
 @keyframes loginShake {
   0%,100% { transform: translateX(0); }

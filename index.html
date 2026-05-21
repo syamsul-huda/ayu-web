@@ -86,6 +86,55 @@
     <div class="login-hint">
       &#128274; Default: <strong>admin</strong> / <strong>astra2025</strong>
     </div>
+    <button type="button" class="forgot-pw-link" onclick="showForgotPasswordModal()">Lupa Password?</button>
+  </div>
+</div>
+
+<!-- MODAL: LUPA PASSWORD -->
+<div class="modal-overlay" id="forgotPasswordModal">
+  <div class="login-card" style="position:relative;max-width:400px;width:90%">
+    <button class="login-close-btn" onclick="closeForgotPasswordModal()" title="Tutup">&#10005;</button>
+    <div style="font-size:2rem;margin-bottom:12px">&#128231;</div>
+    <h2 class="login-title">Lupa Password</h2>
+    <p class="login-subtitle">Masukkan username admin untuk menerima link reset password</p>
+    <form id="forgotPasswordForm" onsubmit="doForgotPassword(event)" autocomplete="off">
+      <div class="field-group" style="margin-bottom:12px;text-align:left">
+        <label>Username</label>
+        <input type="text" id="fpUsername" placeholder="Masukkan username" required />
+      </div>
+      <div class="login-error" id="fpError"></div>
+      <div class="login-success" id="fpSuccess"></div>
+      <button type="submit" id="fpSubmitBtn" class="btn-primary" style="width:100%;justify-content:center;padding:12px;margin-top:8px">&#128231; Kirim Link Reset</button>
+    </form>
+    <button type="button" class="forgot-pw-link" onclick="closeForgotPasswordModal();showLoginModal()">&#8592; Kembali ke Login</button>
+  </div>
+</div>
+
+<!-- MODAL: RESET PASSWORD -->
+<div class="modal-overlay" id="resetPasswordModal">
+  <div class="login-card" style="position:relative;max-width:400px;width:90%">
+    <div style="font-size:2rem;margin-bottom:12px">&#128273;</div>
+    <h2 class="login-title">Buat Password Baru</h2>
+    <p class="login-subtitle">Masukkan password baru untuk akun Anda</p>
+    <form id="resetPasswordForm" onsubmit="doResetPassword(event)" autocomplete="off">
+      <input type="hidden" id="resetToken" />
+      <div class="field-group" style="margin-bottom:12px;text-align:left">
+        <label>Password Baru</label>
+        <div class="pw-wrap">
+          <input type="password" id="rpNew" placeholder="Minimal 6 karakter" required minlength="6" />
+          <button type="button" class="pw-toggle" onclick="togglePwField('rpNew')">&#128065;</button>
+        </div>
+      </div>
+      <div class="field-group" style="margin-bottom:8px;text-align:left">
+        <label>Konfirmasi Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="rpConfirm" placeholder="Ulangi password baru" required />
+          <button type="button" class="pw-toggle" onclick="togglePwField('rpConfirm')">&#128065;</button>
+        </div>
+      </div>
+      <div class="login-error" id="rpError"></div>
+      <button type="submit" class="btn-primary" style="width:100%;justify-content:center;padding:12px;margin-top:8px">&#10003; Simpan Password Baru</button>
+    </form>
   </div>
 </div>
 

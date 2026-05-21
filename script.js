@@ -174,6 +174,88 @@ function togglePwField(id) {
 }
 
 /* ===================================================
+   LUPA PASSWORD
+=================================================== */
+function showForgotPasswordModal() {
+  closeLoginModal();
+  document.getElementById('forgotPasswordForm').reset();
+  document.getElementById('fpError').textContent = '';
+  document.getElementById('fpSuccess').classList.remove('show');
+  document.getElementById('fpSubmitBtn').disabled = false;
+  document.getElementById('forgotPasswordModal').classList.add('show');
+  setTimeout(() => document.getElementById('fpUsername').focus(), 100);
+}
+
+function closeForgotPasswordModal() {
+  document.getElementById('forgotPasswordModal').classList.remove('show');
+  document.getElementById('forgotPasswordForm').reset();
+  document.getElementById('fpError').textContent = '';
+  document.getElementById('fpSuccess').classList.remove('show');
+  document.getElementById('fpSubmitBtn').disabled = false;
+}
+
+async function doForgotPassword(e) {
+  e.preventDefault();
+  const username = document.getElementById('fpUsername').value.trim();
+  const errEl    = document.getElementById('fpError');
+  const succEl   = document.getElementById('fpSuccess');
+  const btn      = document.getElementById('fpSubmitBtn');
+  errEl.textContent = '';
+  succEl.classList.remove('show');
+  btn.disabled = true;
+  btn.textContent = 'Mengirim...';
+  try {
+    const data = await apiFetch('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ username }),
+    });
+    succEl.textContent = '✓ ' + data.message;
+    succEl.classList.add('show');
+    btn.textContent = 'Terkirim';
+  } catch (err) {
+    errEl.textContent = err.message;
+    btn.disabled = false;
+    btn.textContent = '✉ Kirim Link Reset';
+  }
+}
+
+/* ===================================================
+   RESET PASSWORD (dari link email)
+=================================================== */
+function showResetPasswordModal(token) {
+  document.getElementById('resetToken').value = token;
+  document.getElementById('resetPasswordForm').reset();
+  document.getElementById('rpError').textContent = '';
+  document.getElementById('resetPasswordModal').classList.add('show');
+}
+
+async function doResetPassword(e) {
+  e.preventDefault();
+  const token      = document.getElementById('resetToken').value;
+  const newPw      = document.getElementById('rpNew').value;
+  const confirm    = document.getElementById('rpConfirm').value;
+  const errEl      = document.getElementById('rpError');
+  errEl.textContent = '';
+  if (newPw !== confirm) {
+    errEl.textContent = 'Konfirmasi password tidak cocok.';
+    document.getElementById('rpConfirm').value = '';
+    return;
+  }
+  try {
+    const data = await apiFetch('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword: newPw }),
+    });
+    document.getElementById('resetPasswordModal').classList.remove('show');
+    history.replaceState(null, '', window.location.pathname);
+    showToast('✓ ' + data.message);
+    setTimeout(() => showLoginModal(), 800);
+  } catch (err) {
+    errEl.textContent = err.message;
+  }
+}
+
+/* ===================================================
    GANTI PASSWORD
 =================================================== */
 function showChangePasswordModal() {
@@ -1022,6 +1104,10 @@ async function initApp() {
   }
 
   buildPaYearSelects();
+
+  const resetToken = new URLSearchParams(window.location.search).get('reset');
+  if (resetToken) { showResetPasswordModal(resetToken); }
+
   const navType = (performance.getEntriesByType('navigation')[0] || {}).type;
   const isRefresh = navType === 'reload';
   const hash = window.location.hash;
