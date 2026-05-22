@@ -64,6 +64,26 @@ let profiles = [];
 let artikels  = [];
 let portos    = [];
 
+/* ===================================================
+   RICH TEXT EDITOR HELPERS
+=================================================== */
+let _richSel = null;
+
+function saveRichSel() {
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount) _richSel = sel.getRangeAt(0).cloneRange();
+}
+
+function execRich(cmd, val) {
+  if (_richSel) {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(_richSel);
+    _richSel = null;
+  }
+  document.execCommand(cmd, false, val !== undefined ? val : null);
+}
+
 let pendingDeleteId   = null;
 let pendingDeleteType = null;
 let currentProfileId  = null;
@@ -420,6 +440,7 @@ function showArtikelForm(id) {
   }
   document.getElementById('artikelForm').reset();
   document.getElementById('a_editId').value = '';
+  document.getElementById('a_content').innerHTML = '';
   setCoverPreview('artikelCoverPreview', 'a_coverData', null);
   if (id) {
     const a = artikels.find(x => x.id === id);
@@ -430,7 +451,7 @@ function showArtikelForm(id) {
     document.getElementById('a_category').value = a.category || '';
     document.getElementById('a_author').value   = a.author   || '';
     document.getElementById('a_date').value     = a.date     || '';
-    document.getElementById('a_content').value  = a.content  || '';
+    document.getElementById('a_content').innerHTML = a.content || '';
     document.getElementById('a_tags').value     = a.tags     || '';
     setCoverPreview('artikelCoverPreview', 'a_coverData', a.cover || null);
   } else {
@@ -442,13 +463,20 @@ function showArtikelForm(id) {
 
 async function saveArtikel(e) {
   e.preventDefault();
+  const contentEl = document.getElementById('a_content');
+  const content = contentEl.innerHTML.trim();
+  if (!content || content === '<br>') {
+    showToast('Isi artikel tidak boleh kosong');
+    contentEl.focus();
+    return;
+  }
   const editId = document.getElementById('a_editId').value;
   const payload = {
     title:    document.getElementById('a_title').value.trim(),
     category: document.getElementById('a_category').value.trim(),
     author:   document.getElementById('a_author').value.trim(),
     date:     document.getElementById('a_date').value || null,
-    content:  document.getElementById('a_content').value.trim(),
+    content:  content,
     tags:     document.getElementById('a_tags').value.trim(),
     cover:    document.getElementById('a_coverData').value || null,
   };
@@ -505,7 +533,7 @@ function viewArtikel(id) {
     + (a.category ? '<div class="detail-category">' + esc(a.category) + '</div>' : '')
     + '<h1 class="detail-title">' + esc(a.title) + '</h1>'
     + '<div class="detail-meta">' + metaParts.join(' &middot; ') + '</div>'
-    + '<div class="detail-content">' + esc(a.content) + '</div>'
+    + '<div class="detail-content">' + (a.content || '') + '</div>'
     + (tags ? '<div class="detail-tags">' + tags + '</div>' : '')
     + shareSection
     + '<div class="prof-actions">'
@@ -602,6 +630,7 @@ function showPortofolioForm(id) {
   }
   document.getElementById('portofolioForm').reset();
   document.getElementById('p_editId').value = '';
+  document.getElementById('p_description').innerHTML = '';
   setCoverPreview('portoCoverPreview', 'p_coverData', null);
   if (id) {
     const p = portos.find(x => x.id === id);
@@ -614,7 +643,7 @@ function showPortofolioForm(id) {
     document.getElementById('p_client').value       = p.client       || '';
     document.getElementById('p_role').value         = p.role         || '';
     document.getElementById('p_url').value          = p.url          || '';
-    document.getElementById('p_description').value  = p.description  || '';
+    document.getElementById('p_description').innerHTML = p.description || '';
     document.getElementById('p_technologies').value = p.technologies || '';
     setCoverPreview('portoCoverPreview', 'p_coverData', p.cover || null);
   } else {
@@ -625,6 +654,13 @@ function showPortofolioForm(id) {
 
 async function savePortofolio(e) {
   e.preventDefault();
+  const descEl = document.getElementById('p_description');
+  const description = descEl.innerHTML.trim();
+  if (!description || description === '<br>') {
+    showToast('Deskripsi proyek tidak boleh kosong');
+    descEl.focus();
+    return;
+  }
   const editId = document.getElementById('p_editId').value;
   const payload = {
     title:        document.getElementById('p_title').value.trim(),
@@ -633,7 +669,7 @@ async function savePortofolio(e) {
     client:       document.getElementById('p_client').value.trim(),
     role:         document.getElementById('p_role').value.trim(),
     url:          document.getElementById('p_url').value.trim(),
-    description:  document.getElementById('p_description').value.trim(),
+    description:  description,
     technologies: document.getElementById('p_technologies').value.trim(),
     cover:        document.getElementById('p_coverData').value || null,
   };
@@ -685,7 +721,7 @@ function viewPortofolio(id) {
     + (p.category ? '<div class="detail-category">' + esc(p.category) + '</div>' : '')
     + '<h1 class="detail-title">' + esc(p.title) + '</h1>'
     + (infoHtml ? '<div class="porto-info-grid">' + infoHtml + '</div>' : '')
-    + '<div class="detail-content">' + esc(p.description) + '</div>'
+    + '<div class="detail-content">' + (p.description || '') + '</div>'
     + (techs ? '<div style="margin-top:20px"><div class="porto-info-label" style="margin-bottom:8px">Teknologi</div>' + techs + '</div>' : '')
     + '<div class="prof-actions">'
     + '<button class="btn-secondary" onclick="goBack()">&#8592; Kembali</button>'

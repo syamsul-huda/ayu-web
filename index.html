@@ -180,7 +180,41 @@
         </div>
         <div class="field-group" style="margin-bottom:16px">
           <label>Isi Artikel *</label>
-          <textarea id="a_content" placeholder="Tuliskan isi artikel di sini..." rows="14" required></textarea>
+          <div class="rich-toolbar">
+            <button type="button" class="rtb-btn" onmousedown="event.preventDefault()" onclick="execRich('bold')" title="Bold"><b>B</b></button>
+            <button type="button" class="rtb-btn rtb-i" onmousedown="event.preventDefault()" onclick="execRich('italic')" title="Italic">I</button>
+            <button type="button" class="rtb-btn rtb-u" onmousedown="event.preventDefault()" onclick="execRich('underline')" title="Underline">U</button>
+            <div class="rtb-sep"></div>
+            <select class="rtb-select rtb-font-sel" onfocus="saveRichSel()" onchange="execRich('fontName',this.value);this.value=''" title="Font">
+              <option value="">Font</option>
+              <option value="Arial">Arial</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Courier New">Courier New</option>
+              <option value="Verdana">Verdana</option>
+              <option value="Trebuchet MS">Trebuchet MS</option>
+            </select>
+            <select class="rtb-select rtb-size-sel" onfocus="saveRichSel()" onchange="execRich('fontSize',this.value);this.value=''" title="Ukuran Teks">
+              <option value="">Ukuran</option>
+              <option value="1">Kecil</option>
+              <option value="2">Normal</option>
+              <option value="3">Sedang</option>
+              <option value="4">Besar</option>
+              <option value="5">X-Besar</option>
+              <option value="6">XX-Besar</option>
+            </select>
+            <div class="rtb-sep"></div>
+            <label class="rtb-color-wrap" title="Warna Teks">
+              <span class="rtb-color-a">A</span>
+              <input type="color" class="rtb-color-in" value="#212121" onfocus="saveRichSel()" oninput="execRich('foreColor',this.value)" />
+            </label>
+            <div class="rtb-sep"></div>
+            <button type="button" class="rtb-btn" onmousedown="event.preventDefault()" onclick="execRich('justifyLeft')" title="Rata Kiri"><svg width="13" height="10" viewBox="0 0 13 10" fill="currentColor"><rect width="13" height="1.8"/><rect y="4.1" width="9" height="1.8"/><rect y="8.2" width="11" height="1.8"/></svg></button>
+            <button type="button" class="rtb-btn" onmousedown="event.preventDefault()" onclick="execRich('justifyCenter')" title="Rata Tengah"><svg width="13" height="10" viewBox="0 0 13 10" fill="currentColor"><rect width="13" height="1.8"/><rect x="2" y="4.1" width="9" height="1.8"/><rect x="1" y="8.2" width="11" height="1.8"/></svg></button>
+            <button type="button" class="rtb-btn" onmousedown="event.preventDefault()" onclick="execRich('justifyRight')" title="Rata Kanan"><svg width="13" height="10" viewBox="0 0 13 10" fill="currentColor"><rect width="13" height="1.8"/><rect x="4" y="4.1" width="9" height="1.8"/><rect x="2" y="8.2" width="11" height="1.8"/></svg></button>
+            <button type="button" class="rtb-btn" onmousedown="event.preventDefault()" onclick="execRich('justifyFull')" title="Rata Penuh"><svg width="13" height="10" viewBox="0 0 13 10" fill="currentColor"><rect width="13" height="1.8"/><rect y="4.1" width="13" height="1.8"/><rect y="8.2" width="13" height="1.8"/></svg></button>
+          </div>
+          <div class="rich-editor" id="a_content" contenteditable="true" data-placeholder="Tuliskan isi artikel di sini..." style="min-height:280px"></div>
         </div>
         <div class="field-group" style="margin-bottom:16px">
           <label>Tags <small style="color:#999;font-weight:400">(pisahkan dengan koma)</small></label>
@@ -263,7 +297,41 @@
         </div>
         <div class="field-group" style="margin-bottom:16px">
           <label>Deskripsi Proyek *</label>
-          <textarea id="p_description" placeholder="Deskripsikan proyek ini..." rows="8" required></textarea>
+          <div class="rich-toolbar">
+            <button type="button" class="rtb-btn" onmousedown="event.preventDefault()" onclick="execRich('bold')" title="Bold"><b>B</b></button>
+            <button type="button" class="rtb-btn rtb-i" onmousedown="event.preventDefault()" onclick="execRich('italic')" title="Italic">I</button>
+            <button type="button" class="rtb-btn rtb-u" onmousedown="event.preventDefault()" onclick="execRich('underline')" title="Underline">U</button>
+            <div class="rtb-sep"></div>
+            <select class="rtb-select rtb-font-sel" onfocus="saveRichSel()" onchange="execRich('fontName',this.value);this.value=''" title="Font">
+              <option value="">Font</option>
+              <option value="Arial">Arial</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Courier New">Courier New</option>
+              <option value="Verdana">Verdana</option>
+              <option value="Trebuchet MS">Trebuchet MS</option>
+            </select>
+            <select class="rtb-select rtb-size-sel" onfocus="saveRichSel()" onchange="execRich('fontSize',this.value);this.value=''" title="Ukuran Teks">
+              <option value="">Ukuran</option>
+              <option value="1">Kecil</option>
+              <option value="2">Normal</option>
+              <option value="3">Sedang</option>
+              <option value="4">Besar</option>
+              <option value="5">X-Besar</option>
+              <option value="6">XX-Besar</option>
+            </select>
+            <div class="rtb-sep"></div>
+            <label class="rtb-color-wrap" title="Warna Teks">
+              <span class="rtb-color-a">A</span>
+              <input type="color" class="rtb-color-in" value="#212121" onfocus="saveRichSel()" oninput="execRich('foreColor',this.value)" />
+            </label>
+            <div class="rtb-sep"></div>
+            <button type="button" class="rtb-btn" onmousedown="event.preventDefault()" onclick="execRich('justifyLeft')" title="Rata Kiri"><svg width="13" height="10" viewBox="0 0 13 10" fill="currentColor"><rect width="13" height="1.8"/><rect y="4.1" width="9" height="1.8"/><rect y="8.2" width="11" height="1.8"/></svg></button>
+            <button type="button" class="rtb-btn" onmousedown="event.preventDefault()" onclick="execRich('justifyCenter')" title="Rata Tengah"><svg width="13" height="10" viewBox="0 0 13 10" fill="currentColor"><rect width="13" height="1.8"/><rect x="2" y="4.1" width="9" height="1.8"/><rect x="1" y="8.2" width="11" height="1.8"/></svg></button>
+            <button type="button" class="rtb-btn" onmousedown="event.preventDefault()" onclick="execRich('justifyRight')" title="Rata Kanan"><svg width="13" height="10" viewBox="0 0 13 10" fill="currentColor"><rect width="13" height="1.8"/><rect x="4" y="4.1" width="9" height="1.8"/><rect x="2" y="8.2" width="11" height="1.8"/></svg></button>
+            <button type="button" class="rtb-btn" onmousedown="event.preventDefault()" onclick="execRich('justifyFull')" title="Rata Penuh"><svg width="13" height="10" viewBox="0 0 13 10" fill="currentColor"><rect width="13" height="1.8"/><rect y="4.1" width="13" height="1.8"/><rect y="8.2" width="13" height="1.8"/></svg></button>
+          </div>
+          <div class="rich-editor" id="p_description" contenteditable="true" data-placeholder="Deskripsikan proyek ini..." style="min-height:180px"></div>
         </div>
         <div class="field-group" style="margin-bottom:16px">
           <label>Teknologi yang Digunakan <small style="color:#999;font-weight:400">(pisahkan dengan koma)</small></label>
