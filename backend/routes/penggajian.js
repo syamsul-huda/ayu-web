@@ -6,35 +6,34 @@ router.get('/settings', requireAuth, async (req, res) => {
   try {
     const r = await pool.query('SELECT * FROM payroll_settings LIMIT 1');
     if (!r.rows.length) {
-      await pool.query('INSERT INTO payroll_settings (gaji_pokok, overtime_rate, nama, jabatan) VALUES (0, 0, \'\', \'\')');
-      return res.json({ gajiPokok: 0, overtimeRate: 0, nama: '', jabatan: '' });
+      await pool.query('INSERT INTO payroll_settings (gaji_pokok, overtime_rate, nama) VALUES (0, 0, \'\')');
+      return res.json({ gajiPokok: 0, overtimeRate: 0, nama: '' });
     }
     const s = r.rows[0];
     res.json({
       gajiPokok: Number(s.gaji_pokok),
       overtimeRate: Number(s.overtime_rate),
       nama: s.nama || '',
-      jabatan: s.jabatan || '',
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 router.put('/settings', requireAuth, async (req, res) => {
   try {
-    const { gajiPokok = 0, overtimeRate = 0, nama = '', jabatan = '' } = req.body;
+    const { gajiPokok = 0, overtimeRate = 0, nama = '' } = req.body;
     const r = await pool.query('SELECT id FROM payroll_settings LIMIT 1');
     if (!r.rows.length) {
       await pool.query(
-        'INSERT INTO payroll_settings (gaji_pokok, overtime_rate, nama, jabatan) VALUES ($1, $2, $3, $4)',
-        [gajiPokok, overtimeRate, nama, jabatan]
+        'INSERT INTO payroll_settings (gaji_pokok, overtime_rate, nama) VALUES ($1, $2, $3)',
+        [gajiPokok, overtimeRate, nama]
       );
     } else {
       await pool.query(
-        'UPDATE payroll_settings SET gaji_pokok=$1, overtime_rate=$2, nama=$3, jabatan=$4, updated_at=NOW() WHERE id=$5',
-        [gajiPokok, overtimeRate, nama, jabatan, r.rows[0].id]
+        'UPDATE payroll_settings SET gaji_pokok=$1, overtime_rate=$2, nama=$3, updated_at=NOW() WHERE id=$4',
+        [gajiPokok, overtimeRate, nama, r.rows[0].id]
       );
     }
-    res.json({ gajiPokok: Number(gajiPokok), overtimeRate: Number(overtimeRate), nama, jabatan });
+    res.json({ gajiPokok: Number(gajiPokok), overtimeRate: Number(overtimeRate), nama });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

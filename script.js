@@ -1188,7 +1188,7 @@ async function initApp() {
 /* ===================================================
    PENGGAJIAN
 =================================================== */
-let payrollSettings     = { gajiPokok: 0, overtimeRate: 0, nama: '', jabatan: '' };
+let payrollSettings     = { gajiPokok: 0, overtimeRate: 0, nama: '' };
 let payrollOvertime     = [];
 let payrollAdditional   = [];
 let payrollClosedMonths = [];
@@ -1351,7 +1351,6 @@ function viewPgMonth(bulan, tahun) {
   // Info karyawan
   slip += '<div class="pg-slip-empinfo">'
     + '<div class="pg-slip-emprow"><span class="pg-slip-emp-label">Nama</span><span class="pg-slip-emp-colon">:</span><span class="pg-slip-emp-val">' + (payrollSettings.nama || '—') + '</span></div>'
-    + '<div class="pg-slip-emprow"><span class="pg-slip-emp-label">Jabatan</span><span class="pg-slip-emp-colon">:</span><span class="pg-slip-emp-val">' + (payrollSettings.jabatan || '—') + '</span></div>'
     + '<div class="pg-slip-emprow"><span class="pg-slip-emp-label">Periode</span><span class="pg-slip-emp-colon">:</span><span class="pg-slip-emp-val">' + BULAN_NAMES[bulan] + ' ' + tahun + '</span></div>'
     + '</div>';
 
@@ -1482,8 +1481,7 @@ function printPgSlip(bulan, tahun) {
     + '<div class="sub">Periode: ' + BULAN_NAMES[bulan] + ' ' + tahun + '</div>'
     + '</div>'
     + (tglClose ? '<div class="status-closed">Ditutup pada: ' + tglClose + '</div>' : '<div class="status-draft">DRAFT — BELUM DITUTUP</div>')
-    + '<div class="emp"><span class="lbl">Nama</span><span>:</span><span>' + (payrollSettings.nama || '—') + '</span>'
-    + '<span class="lbl">Jabatan</span><span>:</span><span>' + (payrollSettings.jabatan || '—') + '</span></div>'
+    + '<div class="emp"><span class="lbl">Nama</span><span>:</span><span>' + (payrollSettings.nama || '—') + '</span></div>'
     + '<table>'
     + '<thead><tr><th>Komponen Gaji</th><th class="td-r" style="width:200px">Nominal</th></tr></thead>'
     + '<tbody>'
@@ -1512,7 +1510,6 @@ function printPgSlip(bulan, tahun) {
 // --- Settings modal ---
 function openPgSettingsModal() {
   document.getElementById('pgSettingsNama').value         = payrollSettings.nama || '';
-  document.getElementById('pgSettingsJabatan').value      = payrollSettings.jabatan || '';
   document.getElementById('pgSettingsGajiPokok').value    = payrollSettings.gajiPokok;
   document.getElementById('pgSettingsOvertimeRate').value = payrollSettings.overtimeRate;
   document.getElementById('pgSettingsModal').classList.add('show');
@@ -1522,13 +1519,12 @@ function closePgSettingsModal() {
 }
 async function savePgSettings() {
   const nama         = document.getElementById('pgSettingsNama').value.trim();
-  const jabatan      = document.getElementById('pgSettingsJabatan').value.trim();
   const gajiPokok    = parseInt(document.getElementById('pgSettingsGajiPokok').value)    || 0;
   const overtimeRate = parseInt(document.getElementById('pgSettingsOvertimeRate').value) || 0;
   try {
     const res = await apiFetch('/api/penggajian/settings', {
       method: 'PUT',
-      body: JSON.stringify({ gajiPokok, overtimeRate, nama, jabatan }),
+      body: JSON.stringify({ gajiPokok, overtimeRate, nama }),
     });
     payrollSettings = res;
     closePgSettingsModal();
