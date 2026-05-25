@@ -1344,7 +1344,7 @@ function viewPgMonth(bulan, tahun) {
 
   // Header slip
   slip += '<div class="pg-slip-head">'
-    + '<div class="pg-slip-head-title">SLIP GAJI KARYAWAN</div>'
+    + '<div class="pg-slip-head-title">SLIP GAJI</div>'
     + '<div class="pg-slip-head-periode">Periode: ' + BULAN_NAMES[bulan] + ' ' + tahun + '</div>'
     + '</div>';
 
@@ -1478,7 +1478,7 @@ function printPgSlip(bulan, tahun) {
     + '</style></head><body>'
     + '<div class="slip">'
     + '<div class="slip-head">'
-    + '<div class="title">Slip Gaji Karyawan</div>'
+    + '<div class="title">Slip Gaji</div>'
     + '<div class="sub">Periode: ' + BULAN_NAMES[bulan] + ' ' + tahun + '</div>'
     + '</div>'
     + (tglClose ? '<div class="status-closed">Ditutup pada: ' + tglClose + '</div>' : '<div class="status-draft">DRAFT — BELUM DITUTUP</div>')
