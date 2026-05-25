@@ -94,7 +94,7 @@ let loginCallback     = null;
 /* ===================================================
    NAVIGATION
 =================================================== */
-const LIST_VIEWS = new Set(['viewArtikelList', 'viewPortofolioList', 'viewDashboard']);
+const LIST_VIEWS = new Set(['viewArtikelList', 'viewPortofolioList', 'viewDashboard', 'viewPenggajian']);
 
 function showView(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -103,14 +103,34 @@ function showView(id) {
   window.scrollTo(0, 0);
 }
 
+function toggleWorkDropdown(e) {
+  e.stopPropagation();
+  document.getElementById('workDropdownMenu').classList.toggle('open');
+}
+function closeWorkDropdown() {
+  document.getElementById('workDropdownMenu').classList.remove('open');
+}
+document.addEventListener('click', function(e) {
+  if (!document.getElementById('navWorkDropdown').contains(e.target)) {
+    closeWorkDropdown();
+  }
+});
+
 function showSection(section) {
   currentSection = section;
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  const ids = { artikel: 'navArtikel', portofolio: 'navPortofolio', profil: 'navProfil' };
+  const ids = { artikel: 'navArtikel', portofolio: 'navPortofolio', profil: 'navProfil', penggajian: 'navProfil' };
   document.getElementById(ids[section]).classList.add('active');
   if (section === 'artikel')     { renderArtikelList();    showView('viewArtikelList'); }
   else if (section === 'portofolio') { renderPortofolioList(); showView('viewPortofolioList'); }
-  else {
+  else if (section === 'penggajian') {
+    if (!isLoggedIn) {
+      loginCallback = () => showView('viewPenggajian');
+      showLoginModal();
+      return;
+    }
+    showView('viewPenggajian');
+  } else {
     if (!isLoggedIn) {
       loginCallback = () => { renderList(); showView('viewDashboard'); };
       showLoginModal();
@@ -124,6 +144,7 @@ function showSection(section) {
 function goBack() {
   if (currentSection === 'artikel')         { history.pushState(null, '', window.location.pathname); renderArtikelList();    showView('viewArtikelList'); }
   else if (currentSection === 'portofolio') { renderPortofolioList(); showView('viewPortofolioList'); }
+  else if (currentSection === 'penggajian') { showView('viewPenggajian'); }
   else {
     if (!isLoggedIn) { showLoginModal(); return; }
     renderList();
@@ -197,7 +218,7 @@ function doLogout() {
   document.body.classList.remove('admin-logged-in');
   updateAuthButton();
   showToast('Berhasil keluar.');
-  if (currentSection === 'profil') {
+  if (currentSection === 'profil' || currentSection === 'penggajian') {
     currentSection = 'artikel';
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('navArtikel').classList.add('active');
@@ -328,6 +349,7 @@ function rerenderCurrentSection() {
   if (currentSection === 'artikel')         renderArtikelList();
   else if (currentSection === 'portofolio') renderPortofolioList();
   else if (currentSection === 'profil')     renderList();
+  else if (currentSection === 'penggajian') showView('viewPenggajian');
 }
 
 /* ===================================================

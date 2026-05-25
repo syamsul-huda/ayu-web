@@ -14,7 +14,13 @@
   <nav class="header-nav">
     <button class="nav-btn active" id="navArtikel" onclick="showSection('artikel')">Artikel</button>
     <button class="nav-btn" id="navPortofolio" onclick="showSection('portofolio')">Portofolio</button>
-    <button class="nav-btn" id="navProfil" onclick="showSection('profil')">Work</button>
+    <div class="nav-dropdown" id="navWorkDropdown">
+      <button class="nav-btn" id="navProfil" onclick="toggleWorkDropdown(event)">Work &#9660;</button>
+      <div class="nav-dropdown-menu" id="workDropdownMenu">
+        <button onclick="showSection('profil'); closeWorkDropdown()">Individual Profile</button>
+        <button onclick="showSection('penggajian'); closeWorkDropdown()">Penggajian</button>
+      </div>
+    </div>
   </nav>
   <button class="header-settings-btn admin-only" onclick="showChangePasswordModal()" title="Ganti Password">&#9881;</button>
   <button class="header-auth-btn" id="headerAuthBtn" onclick="handleAuthBtn()">&#128274; Masuk</button>
@@ -558,6 +564,16 @@
 <!-- VIEW: PROFILE -->
 <div class="view" id="viewProfile">
   <div class="profile-page" id="profilePage"></div>
+</div>
+
+<!-- VIEW: PENGGAJIAN -->
+<div class="view" id="viewPenggajian">
+  <div class="section-header">
+    <h2>Penggajian</h2>
+  </div>
+  <div class="penggajian-placeholder">
+    <p>Fitur penggajian akan segera hadir.</p>
+  </div>
 </div>
 
 <footer class="app-footer">
