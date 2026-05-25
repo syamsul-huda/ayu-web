@@ -125,11 +125,12 @@ function showSection(section) {
   else if (section === 'portofolio') { renderPortofolioList(); showView('viewPortofolioList'); }
   else if (section === 'penggajian') {
     if (!isLoggedIn) {
-      loginCallback = () => showView('viewPenggajian');
+      loginCallback = () => { pgCurrentMonth = null; loadPenggajian(); };
       showLoginModal();
       return;
     }
-    showView('viewPenggajian');
+    pgCurrentMonth = null;
+    loadPenggajian();
   } else {
     if (!isLoggedIn) {
       loginCallback = () => { renderList(); showView('viewDashboard'); };
@@ -144,7 +145,11 @@ function showSection(section) {
 function goBack() {
   if (currentSection === 'artikel')         { history.pushState(null, '', window.location.pathname); renderArtikelList();    showView('viewArtikelList'); }
   else if (currentSection === 'portofolio') { renderPortofolioList(); showView('viewPortofolioList'); }
-  else if (currentSection === 'penggajian') { showView('viewPenggajian'); }
+  else if (currentSection === 'penggajian') {
+    pgCurrentMonth = null;
+    renderPenggajianDashboard();
+    showView('viewPenggajian');
+  }
   else {
     if (!isLoggedIn) { showLoginModal(); return; }
     renderList();
@@ -349,7 +354,7 @@ function rerenderCurrentSection() {
   if (currentSection === 'artikel')         renderArtikelList();
   else if (currentSection === 'portofolio') renderPortofolioList();
   else if (currentSection === 'profil')     renderList();
-  else if (currentSection === 'penggajian') showView('viewPenggajian');
+  else if (currentSection === 'penggajian') { pgCurrentMonth = null; loadPenggajian(); }
 }
 
 /* ===================================================
@@ -1178,6 +1183,273 @@ async function initApp() {
   }
   if (hash) history.replaceState(null, '', window.location.pathname);
   renderArtikelList();
+}
+
+/* ===================================================
+   PENGGAJIAN
+=================================================== */
+let payrollSettings  = { gajiPokok: 0, overtimeRate: 0 };
+let payrollOvertime  = [];
+let payrollAdditional = [];
+let pgCurrentMonth   = null; // { bulan, tahun }
+let pgActiveTab      = 'overtime';
+
+const BULAN_NAMES = ['','Januari','Februari','Maret','April','Mei','Juni',
+  'Juli','Agustus','September','Oktober','November','Desember'];
+
+function fmtRp(n) {
+  return 'Rp ' + Number(n).toLocaleString('id-ID');
+}
+
+async function loadPenggajian() {
+  try {
+    const [s, ot, ad] = await Promise.all([
+      apiFetch('/api/penggajian/settings'),
+      apiFetch('/api/penggajian/overtime'),
+      apiFetch('/api/penggajian/additional'),
+    ]);
+    payrollSettings   = s;
+    payrollOvertime   = ot;
+    payrollAdditional = ad;
+  } catch (e) {
+    showToast('Gagal memuat data penggajian');
+  }
+  renderPgSettingsBar();
+  renderPenggajianDashboard();
+  showView('viewPenggajian');
+}
+
+function renderPgSettingsBar() {
+  const bar = document.getElementById('pgSettingsBar');
+  bar.innerHTML =
+    '<div class="pg-set-item"><span class="pg-set-label">Gaji Pokok</span><span class="pg-set-val">' + fmtRp(payrollSettings.gajiPokok) + '</span></div>' +
+    '<div class="pg-set-item"><span class="pg-set-label">Overtime Rate / Jam</span><span class="pg-set-val">' + fmtRp(payrollSettings.overtimeRate) + '</span></div>';
+}
+
+function pgGetMonths() {
+  const now   = new Date();
+  const set   = new Set();
+  const key   = (b, t) => t + '-' + String(b).padStart(2, '0');
+  set.add(key(now.getMonth() + 1, now.getFullYear()));
+  payrollOvertime.forEach(o => {
+    const d = new Date(o.tgl + 'T00:00:00');
+    set.add(key(d.getMonth() + 1, d.getFullYear()));
+  });
+  payrollAdditional.forEach(a => set.add(key(a.bulan, a.tahun)));
+  return Array.from(set)
+    .map(k => { const [t, b] = k.split('-'); return { tahun: +t, bulan: +b }; })
+    .sort((a, b) => b.tahun !== a.tahun ? b.tahun - a.tahun : b.bulan - a.bulan);
+}
+
+function pgCalcMonth(bulan, tahun) {
+  const ovMonth = payrollOvertime.filter(o => {
+    const d = new Date(o.tgl + 'T00:00:00');
+    return d.getMonth() + 1 === bulan && d.getFullYear() === tahun;
+  });
+  const adMonth = payrollAdditional.filter(a => a.bulan === bulan && a.tahun === tahun);
+  const totalJam      = ovMonth.reduce((s, o) => s + o.jam, 0);
+  const totalOvertime = Math.round(totalJam * payrollSettings.overtimeRate);
+  const totalAdditional = adMonth.reduce((s, a) => s + a.nominal, 0);
+  const totalGaji = payrollSettings.gajiPokok + totalOvertime + totalAdditional;
+  return { ovMonth, adMonth, totalJam, totalOvertime, totalAdditional, totalGaji };
+}
+
+function renderPenggajianDashboard() {
+  const months = pgGetMonths();
+  const list   = document.getElementById('pgMonthList');
+  if (!months.length) {
+    list.innerHTML = '<div class="pg-empty">Belum ada data. Klik "+ Input" untuk menambah data.</div>';
+    return;
+  }
+  list.innerHTML = months.map(({ bulan, tahun }) => {
+    const { totalJam, totalOvertime, totalAdditional, totalGaji } = pgCalcMonth(bulan, tahun);
+    return '<div class="pg-month-card" onclick="viewPgMonth(' + bulan + ',' + tahun + ')">'
+      + '<div class="pg-mc-left">'
+      + '<div class="pg-mc-bulan">' + BULAN_NAMES[bulan] + ' ' + tahun + '</div>'
+      + '<div class="pg-mc-breakdown">'
+      + '<span>OT: ' + totalJam + ' jam (+' + fmtRp(totalOvertime) + ')</span>'
+      + '<span>Additional: +' + fmtRp(totalAdditional) + '</span>'
+      + '</div></div>'
+      + '<div class="pg-mc-right">'
+      + '<div class="pg-mc-total-label">Total Gaji</div>'
+      + '<div class="pg-mc-total-val">' + fmtRp(totalGaji) + '</div>'
+      + '</div></div>';
+  }).join('');
+}
+
+function viewPgMonth(bulan, tahun) {
+  pgCurrentMonth = { bulan, tahun };
+  const { ovMonth, adMonth, totalJam, totalOvertime, totalAdditional, totalGaji } = pgCalcMonth(bulan, tahun);
+
+  document.getElementById('pgDetailTitle').textContent = BULAN_NAMES[bulan] + ' ' + tahun;
+
+  let html = '';
+
+  // Gaji pokok
+  html += '<div class="pg-detail-base">'
+    + '<span class="pg-db-label">Gaji Pokok</span>'
+    + '<span class="pg-db-val">' + fmtRp(payrollSettings.gajiPokok) + '</span>'
+    + '</div>';
+
+  // Overtime
+  html += '<div class="pg-detail-section">'
+    + '<div class="pg-detail-section-title">Overtime (' + totalJam + ' jam)</div>';
+  if (ovMonth.length) {
+    html += ovMonth.map(o => {
+      const d     = new Date(o.tgl + 'T00:00:00');
+      const tgl   = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+      const nilai = Math.round(o.jam * payrollSettings.overtimeRate);
+      return '<div class="pg-detail-row">'
+        + '<div class="pg-dr-info"><div class="pg-dr-main">' + tgl + '</div>'
+        + '<div class="pg-dr-sub">' + o.jam + ' jam &times; ' + fmtRp(payrollSettings.overtimeRate) + '/jam</div></div>'
+        + '<div class="pg-dr-val">+' + fmtRp(nilai) + '</div>'
+        + '<button class="btn-icon del admin-only" title="Hapus" onclick="deletePgOvertime(\'' + o.id + '\')">&#128465;</button>'
+        + '</div>';
+    }).join('');
+  } else {
+    html += '<div class="pg-empty">Belum ada data overtime bulan ini.</div>';
+  }
+  html += '</div>';
+
+  // Additional
+  html += '<div class="pg-detail-section">'
+    + '<div class="pg-detail-section-title">Additional Gaji</div>';
+  if (adMonth.length) {
+    html += adMonth.map(a =>
+      '<div class="pg-detail-row">'
+      + '<div class="pg-dr-info"><div class="pg-dr-main">' + (a.deskripsi || 'Tanpa keterangan') + '</div></div>'
+      + '<div class="pg-dr-val">+' + fmtRp(a.nominal) + '</div>'
+      + '<button class="btn-icon del admin-only" title="Hapus" onclick="deletePgAdditional(\'' + a.id + '\')">&#128465;</button>'
+      + '</div>'
+    ).join('');
+  } else {
+    html += '<div class="pg-empty">Belum ada additional gaji bulan ini.</div>';
+  }
+  html += '</div>';
+
+  // Total
+  html += '<div class="pg-detail-total">'
+    + '<span class="pg-dt-label">Total Gaji ' + BULAN_NAMES[bulan] + ' ' + tahun + '</span>'
+    + '<span class="pg-dt-val">' + fmtRp(totalGaji) + '</span>'
+    + '</div>';
+
+  document.getElementById('pgDetailBody').innerHTML = html;
+  showView('viewPenggajianDetail');
+}
+
+// --- Settings modal ---
+function openPgSettingsModal() {
+  document.getElementById('pgSettingsGajiPokok').value    = payrollSettings.gajiPokok;
+  document.getElementById('pgSettingsOvertimeRate').value = payrollSettings.overtimeRate;
+  document.getElementById('pgSettingsModal').classList.add('show');
+}
+function closePgSettingsModal() {
+  document.getElementById('pgSettingsModal').classList.remove('show');
+}
+async function savePgSettings() {
+  const gajiPokok    = parseInt(document.getElementById('pgSettingsGajiPokok').value)    || 0;
+  const overtimeRate = parseInt(document.getElementById('pgSettingsOvertimeRate').value) || 0;
+  try {
+    const res = await apiFetch('/api/penggajian/settings', {
+      method: 'PUT',
+      body: JSON.stringify({ gajiPokok, overtimeRate }),
+    });
+    payrollSettings = res;
+    closePgSettingsModal();
+    renderPgSettingsBar();
+    if (document.getElementById('viewPenggajianDetail').classList.contains('active') && pgCurrentMonth) {
+      viewPgMonth(pgCurrentMonth.bulan, pgCurrentMonth.tahun);
+    } else {
+      renderPenggajianDashboard();
+    }
+    showToast('Pengaturan gaji disimpan.');
+  } catch (e) {
+    showToast('Gagal menyimpan pengaturan: ' + e.message);
+  }
+}
+
+// --- Input modal ---
+function openPgInputModal() {
+  // Pre-fill bulan/tahun dengan bulan yang sedang dilihat atau bulan sekarang
+  const ref = pgCurrentMonth || { bulan: new Date().getMonth() + 1, tahun: new Date().getFullYear() };
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('pgOvTgl').value            = today;
+  document.getElementById('pgOvJam').value            = '';
+  document.getElementById('pgAddBulan').value         = ref.bulan;
+  document.getElementById('pgAddTahun').value         = ref.tahun;
+  document.getElementById('pgAddDeskripsi').value     = '';
+  document.getElementById('pgAddNominal').value       = '';
+  switchPgTab('overtime');
+  document.getElementById('pgInputModal').classList.add('show');
+}
+function closePgInputModal() {
+  document.getElementById('pgInputModal').classList.remove('show');
+}
+function switchPgTab(tab) {
+  pgActiveTab = tab;
+  document.getElementById('pgTabOvertime').classList.toggle('active',    tab === 'overtime');
+  document.getElementById('pgTabAdditional').classList.toggle('active',  tab === 'additional');
+  document.getElementById('pgOvertimeForm').style.display    = tab === 'overtime'   ? 'block' : 'none';
+  document.getElementById('pgAdditionalForm').style.display  = tab === 'additional' ? 'block' : 'none';
+}
+async function savePgInput() {
+  try {
+    if (pgActiveTab === 'overtime') {
+      const tgl = document.getElementById('pgOvTgl').value;
+      const jam = parseFloat(document.getElementById('pgOvJam').value);
+      if (!tgl)       { showToast('Pilih tanggal overtime.'); return; }
+      if (!jam || jam <= 0) { showToast('Masukkan jumlah jam yang valid.'); return; }
+      const entry = await apiFetch('/api/penggajian/overtime', {
+        method: 'POST', body: JSON.stringify({ tgl, jam }),
+      });
+      payrollOvertime.unshift(entry);
+      showToast('Data overtime ditambahkan.');
+    } else {
+      const bulan    = parseInt(document.getElementById('pgAddBulan').value);
+      const tahun    = parseInt(document.getElementById('pgAddTahun').value);
+      const deskripsi = document.getElementById('pgAddDeskripsi').value.trim();
+      const nominal  = parseInt(document.getElementById('pgAddNominal').value) || 0;
+      if (!tahun)   { showToast('Masukkan tahun.'); return; }
+      if (!nominal) { showToast('Masukkan nominal.'); return; }
+      const entry = await apiFetch('/api/penggajian/additional', {
+        method: 'POST', body: JSON.stringify({ bulan, tahun, deskripsi, nominal }),
+      });
+      payrollAdditional.unshift(entry);
+      showToast('Additional gaji ditambahkan.');
+    }
+    closePgInputModal();
+    if (document.getElementById('viewPenggajianDetail').classList.contains('active') && pgCurrentMonth) {
+      viewPgMonth(pgCurrentMonth.bulan, pgCurrentMonth.tahun);
+    } else {
+      renderPenggajianDashboard();
+    }
+  } catch (e) {
+    showToast('Gagal menyimpan: ' + e.message);
+  }
+}
+
+async function deletePgOvertime(id) {
+  try {
+    await apiFetch('/api/penggajian/overtime/' + id, { method: 'DELETE' });
+    payrollOvertime = payrollOvertime.filter(o => o.id !== id);
+    if (pgCurrentMonth) viewPgMonth(pgCurrentMonth.bulan, pgCurrentMonth.tahun);
+    else renderPenggajianDashboard();
+    showToast('Data overtime dihapus.');
+  } catch (e) {
+    showToast('Gagal menghapus: ' + e.message);
+  }
+}
+
+async function deletePgAdditional(id) {
+  try {
+    await apiFetch('/api/penggajian/additional/' + id, { method: 'DELETE' });
+    payrollAdditional = payrollAdditional.filter(a => a.id !== id);
+    if (pgCurrentMonth) viewPgMonth(pgCurrentMonth.bulan, pgCurrentMonth.tahun);
+    else renderPenggajianDashboard();
+    showToast('Additional gaji dihapus.');
+  } catch (e) {
+    showToast('Gagal menghapus: ' + e.message);
+  }
 }
 
 initApp();

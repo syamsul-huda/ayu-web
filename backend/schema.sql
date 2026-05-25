@@ -110,6 +110,29 @@ CREATE TABLE IF NOT EXISTS portos (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS payroll_settings (
+  id SERIAL PRIMARY KEY,
+  gaji_pokok BIGINT NOT NULL DEFAULT 0,
+  overtime_rate BIGINT NOT NULL DEFAULT 0,
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS payroll_overtime (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tgl DATE NOT NULL,
+  jam NUMERIC(6,2) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS payroll_additional (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  bulan INTEGER NOT NULL,
+  tahun INTEGER NOT NULL,
+  deskripsi VARCHAR(255),
+  nominal BIGINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Migration: ganti kolom pa_2023/pa_2024/pa_2025 ke pa_year+val yang dinamis
 -- Jalankan ini sekali pada database yang sudah ada:
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS pa_year1 VARCHAR(20) DEFAULT '2023';

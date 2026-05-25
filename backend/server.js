@@ -46,6 +46,7 @@ app.use('/api/profiles', require('./routes/profiles'));
 app.use('/api/artikels', require('./routes/artikels'));
 app.use('/api/portos', require('./routes/portos'));
 app.use('/api/upload', require('./routes/upload'));
+app.use('/api/penggajian', require('./routes/penggajian'));
 
 app.get('/reset', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'reset.html'));

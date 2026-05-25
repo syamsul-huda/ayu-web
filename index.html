@@ -566,13 +566,100 @@
   <div class="profile-page" id="profilePage"></div>
 </div>
 
-<!-- VIEW: PENGGAJIAN -->
+<!-- VIEW: PENGGAJIAN DASHBOARD -->
 <div class="view" id="viewPenggajian">
-  <div class="section-header">
+  <div class="pg-toolbar">
     <h2>Penggajian</h2>
+    <div class="pg-toolbar-actions admin-only">
+      <button class="btn-pg-input" onclick="openPgInputModal()">+ Input</button>
+      <button class="btn-pg-settings" onclick="openPgSettingsModal()">&#9881; Pengaturan</button>
+    </div>
   </div>
-  <div class="penggajian-placeholder">
-    <p>Fitur penggajian akan segera hadir.</p>
+  <div class="pg-settings-bar" id="pgSettingsBar"></div>
+  <div class="pg-month-list" id="pgMonthList"></div>
+</div>
+
+<!-- VIEW: PENGGAJIAN DETAIL -->
+<div class="view" id="viewPenggajianDetail">
+  <div class="pg-toolbar">
+    <h2 id="pgDetailTitle">Detail Gaji</h2>
+    <button class="btn-pg-input admin-only" onclick="openPgInputModal()">+ Input</button>
+  </div>
+  <div id="pgDetailBody"></div>
+</div>
+
+<!-- MODAL: PENGGAJIAN SETTINGS -->
+<div class="modal-overlay" id="pgSettingsModal">
+  <div class="pg-modal-card">
+    <button class="login-close-btn" onclick="closePgSettingsModal()">&#10005;</button>
+    <div class="form-title-bar">Pengaturan Gaji</div>
+    <div class="pg-modal-body">
+      <div class="pg-field">
+        <label>Gaji Pokok (Rp)</label>
+        <input type="number" id="pgSettingsGajiPokok" placeholder="0" min="0" />
+      </div>
+      <div class="pg-field">
+        <label>Overtime Rate per Jam (Rp)</label>
+        <input type="number" id="pgSettingsOvertimeRate" placeholder="0" min="0" />
+      </div>
+    </div>
+    <div class="pg-modal-footer">
+      <button class="btn-pg-cancel" onclick="closePgSettingsModal()">Batal</button>
+      <button class="btn-pg-save" onclick="savePgSettings()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PENGGAJIAN INPUT -->
+<div class="modal-overlay" id="pgInputModal">
+  <div class="pg-modal-card">
+    <button class="login-close-btn" onclick="closePgInputModal()">&#10005;</button>
+    <div class="form-title-bar">Tambah Data</div>
+    <div class="pg-modal-body">
+      <div class="pg-input-tabs">
+        <button class="pg-tab active" id="pgTabOvertime" onclick="switchPgTab('overtime')">Overtime</button>
+        <button class="pg-tab" id="pgTabAdditional" onclick="switchPgTab('additional')">Additional</button>
+      </div>
+      <div id="pgOvertimeForm">
+        <div class="pg-field">
+          <label>Tanggal Overtime</label>
+          <input type="date" id="pgOvTgl" />
+        </div>
+        <div class="pg-field">
+          <label>Jumlah Jam</label>
+          <input type="number" id="pgOvJam" placeholder="0" min="0" step="0.5" />
+        </div>
+      </div>
+      <div id="pgAdditionalForm" style="display:none">
+        <div class="pg-field">
+          <label>Bulan</label>
+          <select id="pgAddBulan">
+            <option value="1">Januari</option><option value="2">Februari</option>
+            <option value="3">Maret</option><option value="4">April</option>
+            <option value="5">Mei</option><option value="6">Juni</option>
+            <option value="7">Juli</option><option value="8">Agustus</option>
+            <option value="9">September</option><option value="10">Oktober</option>
+            <option value="11">November</option><option value="12">Desember</option>
+          </select>
+        </div>
+        <div class="pg-field">
+          <label>Tahun</label>
+          <input type="number" id="pgAddTahun" placeholder="2025" />
+        </div>
+        <div class="pg-field">
+          <label>Deskripsi</label>
+          <input type="text" id="pgAddDeskripsi" placeholder="mis. bonus, tunjangan..." />
+        </div>
+        <div class="pg-field">
+          <label>Nominal (Rp)</label>
+          <input type="number" id="pgAddNominal" placeholder="0" min="0" />
+        </div>
+      </div>
+    </div>
+    <div class="pg-modal-footer">
+      <button class="btn-pg-cancel" onclick="closePgInputModal()">Batal</button>
+      <button class="btn-pg-save" onclick="savePgInput()">Simpan</button>
+    </div>
   </div>
 </div>
 
