@@ -583,7 +583,7 @@
 <div class="view" id="viewPenggajianDetail">
   <div class="pg-toolbar">
     <h2 id="pgDetailTitle">Detail Gaji</h2>
-    <button class="btn-pg-input admin-only" onclick="openPgInputModal()">+ Input</button>
+    <div id="pgDetailActions" style="display:flex;gap:8px;flex-wrap:wrap"></div>
   </div>
   <div id="pgDetailBody"></div>
 </div>
@@ -594,6 +594,14 @@
     <button class="login-close-btn" onclick="closePgSettingsModal()">&#10005;</button>
     <div class="form-title-bar">Pengaturan Gaji</div>
     <div class="pg-modal-body">
+      <div class="pg-field">
+        <label>Nama Karyawan</label>
+        <input type="text" id="pgSettingsNama" placeholder="Nama lengkap..." />
+      </div>
+      <div class="pg-field">
+        <label>Jabatan</label>
+        <input type="text" id="pgSettingsJabatan" placeholder="Jabatan / posisi..." />
+      </div>
       <div class="pg-field">
         <label>Gaji Pokok (Rp)</label>
         <input type="number" id="pgSettingsGajiPokok" placeholder="0" min="0" />

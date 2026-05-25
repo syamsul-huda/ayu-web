@@ -1188,11 +1188,12 @@ async function initApp() {
 /* ===================================================
    PENGGAJIAN
 =================================================== */
-let payrollSettings  = { gajiPokok: 0, overtimeRate: 0 };
-let payrollOvertime  = [];
-let payrollAdditional = [];
-let pgCurrentMonth   = null; // { bulan, tahun }
-let pgActiveTab      = 'overtime';
+let payrollSettings     = { gajiPokok: 0, overtimeRate: 0, nama: '', jabatan: '' };
+let payrollOvertime     = [];
+let payrollAdditional   = [];
+let payrollClosedMonths = [];
+let pgCurrentMonth      = null; // { bulan, tahun }
+let pgActiveTab         = 'overtime';
 
 const BULAN_NAMES = ['','Januari','Februari','Maret','April','Mei','Juni',
   'Juli','Agustus','September','Oktober','November','Desember'];
@@ -1201,16 +1202,41 @@ function fmtRp(n) {
   return 'Rp ' + Number(n).toLocaleString('id-ID');
 }
 
+function isMonthClosed(bulan, tahun) {
+  return payrollClosedMonths.some(c => c.bulan === bulan && c.tahun === tahun);
+}
+
+function getClosedInfo(bulan, tahun) {
+  return payrollClosedMonths.find(c => c.bulan === bulan && c.tahun === tahun) || null;
+}
+
+// Bulan aktif = bulan setelah bulan terakhir yang di-close (atau bulan sekarang jika belum ada)
+function getActiveMonth() {
+  if (!payrollClosedMonths.length) {
+    const now = new Date();
+    return { bulan: now.getMonth() + 1, tahun: now.getFullYear() };
+  }
+  const sorted = [...payrollClosedMonths].sort((a, b) =>
+    b.tahun !== a.tahun ? b.tahun - a.tahun : b.bulan - a.bulan
+  );
+  let nextBulan = sorted[0].bulan + 1;
+  let nextTahun = sorted[0].tahun;
+  if (nextBulan > 12) { nextBulan = 1; nextTahun++; }
+  return { bulan: nextBulan, tahun: nextTahun };
+}
+
 async function loadPenggajian() {
   try {
-    const [s, ot, ad] = await Promise.all([
+    const [s, ot, ad, cl] = await Promise.all([
       apiFetch('/api/penggajian/settings'),
       apiFetch('/api/penggajian/overtime'),
       apiFetch('/api/penggajian/additional'),
+      apiFetch('/api/penggajian/closed'),
     ]);
-    payrollSettings   = s;
-    payrollOvertime   = ot;
-    payrollAdditional = ad;
+    payrollSettings     = s;
+    payrollOvertime     = ot;
+    payrollAdditional   = ad;
+    payrollClosedMonths = cl;
   } catch (e) {
     showToast('Gagal memuat data penggajian');
   }
@@ -1222,20 +1248,22 @@ async function loadPenggajian() {
 function renderPgSettingsBar() {
   const bar = document.getElementById('pgSettingsBar');
   bar.innerHTML =
+    (payrollSettings.nama ? '<div class="pg-set-item"><span class="pg-set-label">Karyawan</span><span class="pg-set-val">' + payrollSettings.nama + '</span></div>' : '') +
     '<div class="pg-set-item"><span class="pg-set-label">Gaji Pokok</span><span class="pg-set-val">' + fmtRp(payrollSettings.gajiPokok) + '</span></div>' +
-    '<div class="pg-set-item"><span class="pg-set-label">Overtime Rate / Jam</span><span class="pg-set-val">' + fmtRp(payrollSettings.overtimeRate) + '</span></div>';
+    '<div class="pg-set-item"><span class="pg-set-label">Overtime / Jam</span><span class="pg-set-val">' + fmtRp(payrollSettings.overtimeRate) + '</span></div>';
 }
 
 function pgGetMonths() {
-  const now   = new Date();
-  const set   = new Set();
-  const key   = (b, t) => t + '-' + String(b).padStart(2, '0');
-  set.add(key(now.getMonth() + 1, now.getFullYear()));
+  const active = getActiveMonth();
+  const set    = new Set();
+  const key    = (b, t) => t + '-' + String(b).padStart(2, '0');
+  set.add(key(active.bulan, active.tahun));
   payrollOvertime.forEach(o => {
     const d = new Date(o.tgl + 'T00:00:00');
     set.add(key(d.getMonth() + 1, d.getFullYear()));
   });
   payrollAdditional.forEach(a => set.add(key(a.bulan, a.tahun)));
+  payrollClosedMonths.forEach(c => set.add(key(c.bulan, c.tahun)));
   return Array.from(set)
     .map(k => { const [t, b] = k.split('-'); return { tahun: +t, bulan: +b }; })
     .sort((a, b) => b.tahun !== a.tahun ? b.tahun - a.tahun : b.bulan - a.bulan);
@@ -1247,10 +1275,10 @@ function pgCalcMonth(bulan, tahun) {
     return d.getMonth() + 1 === bulan && d.getFullYear() === tahun;
   });
   const adMonth = payrollAdditional.filter(a => a.bulan === bulan && a.tahun === tahun);
-  const totalJam      = ovMonth.reduce((s, o) => s + o.jam, 0);
-  const totalOvertime = Math.round(totalJam * payrollSettings.overtimeRate);
+  const totalJam        = ovMonth.reduce((s, o) => s + o.jam, 0);
+  const totalOvertime   = Math.round(totalJam * payrollSettings.overtimeRate);
   const totalAdditional = adMonth.reduce((s, a) => s + a.nominal, 0);
-  const totalGaji = payrollSettings.gajiPokok + totalOvertime + totalAdditional;
+  const totalGaji       = payrollSettings.gajiPokok + totalOvertime + totalAdditional;
   return { ovMonth, adMonth, totalJam, totalOvertime, totalAdditional, totalGaji };
 }
 
@@ -1263,9 +1291,13 @@ function renderPenggajianDashboard() {
   }
   list.innerHTML = months.map(({ bulan, tahun }) => {
     const { totalJam, totalOvertime, totalAdditional, totalGaji } = pgCalcMonth(bulan, tahun);
-    return '<div class="pg-month-card" onclick="viewPgMonth(' + bulan + ',' + tahun + ')">'
+    const closed  = isMonthClosed(bulan, tahun);
+    const badge   = closed
+      ? '<span class="pg-badge pg-badge-closed">&#128274; Closed</span>'
+      : '<span class="pg-badge pg-badge-open">&#9654; Open</span>';
+    return '<div class="pg-month-card' + (closed ? ' pg-month-closed' : '') + '" onclick="viewPgMonth(' + bulan + ',' + tahun + ')">'
       + '<div class="pg-mc-left">'
-      + '<div class="pg-mc-bulan">' + BULAN_NAMES[bulan] + ' ' + tahun + '</div>'
+      + '<div class="pg-mc-bulan">' + BULAN_NAMES[bulan] + ' ' + tahun + ' ' + badge + '</div>'
       + '<div class="pg-mc-breakdown">'
       + '<span>OT: ' + totalJam + ' jam (+' + fmtRp(totalOvertime) + ')</span>'
       + '<span>Additional: +' + fmtRp(totalAdditional) + '</span>'
@@ -1279,66 +1311,208 @@ function renderPenggajianDashboard() {
 
 function viewPgMonth(bulan, tahun) {
   pgCurrentMonth = { bulan, tahun };
+  const closed   = isMonthClosed(bulan, tahun);
+  const closedInfo = getClosedInfo(bulan, tahun);
   const { ovMonth, adMonth, totalJam, totalOvertime, totalAdditional, totalGaji } = pgCalcMonth(bulan, tahun);
 
   document.getElementById('pgDetailTitle').textContent = BULAN_NAMES[bulan] + ' ' + tahun;
 
-  let html = '';
+  // Action buttons di toolbar (dirender via pgDetailActions div)
+  let actions = '';
+  if (isLoggedIn) {
+    actions += '<button class="btn-pg-print" onclick="printPgSlip(' + bulan + ',' + tahun + ')">&#128438; Export PDF</button>';
+    if (closed) {
+      actions += '<button class="btn-pg-reopen admin-only" onclick="reopenPgMonth(' + bulan + ',' + tahun + ')">&#128275; Buka Kembali</button>';
+    } else {
+      actions += '<button class="btn-pg-close admin-only" onclick="closePgMonth(' + bulan + ',' + tahun + ')">&#128274; Tutup Bulan</button>';
+      actions += '<button class="btn-pg-input admin-only" onclick="openPgInputModal()">+ Input</button>';
+    }
+  }
+  document.getElementById('pgDetailActions').innerHTML = actions;
+
+  // Status bar
+  let statusHtml = '';
+  if (closed && closedInfo) {
+    const tglClose = new Date(closedInfo.closedAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+    statusHtml = '<div class="pg-slip-status closed">&#128274; Ditutup pada ' + tglClose + '</div>';
+  } else {
+    statusHtml = '<div class="pg-slip-status draft">&#9998; Draft — belum ditutup</div>';
+  }
+
+  // Slip preview
+  let slip = '<div class="pg-slip-preview">';
+
+  // Header slip
+  slip += '<div class="pg-slip-head">'
+    + '<div class="pg-slip-head-title">SLIP GAJI KARYAWAN</div>'
+    + '<div class="pg-slip-head-periode">Periode: ' + BULAN_NAMES[bulan] + ' ' + tahun + '</div>'
+    + '</div>';
+
+  // Info karyawan
+  slip += '<div class="pg-slip-empinfo">'
+    + '<div class="pg-slip-emprow"><span class="pg-slip-emp-label">Nama</span><span class="pg-slip-emp-colon">:</span><span class="pg-slip-emp-val">' + (payrollSettings.nama || '—') + '</span></div>'
+    + '<div class="pg-slip-emprow"><span class="pg-slip-emp-label">Jabatan</span><span class="pg-slip-emp-colon">:</span><span class="pg-slip-emp-val">' + (payrollSettings.jabatan || '—') + '</span></div>'
+    + '<div class="pg-slip-emprow"><span class="pg-slip-emp-label">Periode</span><span class="pg-slip-emp-colon">:</span><span class="pg-slip-emp-val">' + BULAN_NAMES[bulan] + ' ' + tahun + '</span></div>'
+    + '</div>';
+
+  // Tabel komponen
+  slip += '<table class="pg-slip-table">'
+    + '<thead><tr><th>Komponen Gaji</th><th class="pg-slip-th-right">Nominal</th></tr></thead>'
+    + '<tbody>';
 
   // Gaji pokok
-  html += '<div class="pg-detail-base">'
-    + '<span class="pg-db-label">Gaji Pokok</span>'
-    + '<span class="pg-db-val">' + fmtRp(payrollSettings.gajiPokok) + '</span>'
-    + '</div>';
+  slip += '<tr class="pg-slip-tr-main"><td>Gaji Pokok</td><td class="pg-slip-td-right">' + fmtRp(payrollSettings.gajiPokok) + '</td></tr>';
 
   // Overtime
-  html += '<div class="pg-detail-section">'
-    + '<div class="pg-detail-section-title">Overtime (' + totalJam + ' jam)</div>';
-  if (ovMonth.length) {
-    html += ovMonth.map(o => {
-      const d     = new Date(o.tgl + 'T00:00:00');
-      const tgl   = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
-      const nilai = Math.round(o.jam * payrollSettings.overtimeRate);
-      return '<div class="pg-detail-row">'
-        + '<div class="pg-dr-info"><div class="pg-dr-main">' + tgl + '</div>'
-        + '<div class="pg-dr-sub">' + o.jam + ' jam &times; ' + fmtRp(payrollSettings.overtimeRate) + '/jam</div></div>'
-        + '<div class="pg-dr-val">+' + fmtRp(nilai) + '</div>'
-        + '<button class="btn-icon del admin-only" title="Hapus" onclick="deletePgOvertime(\'' + o.id + '\')">&#128465;</button>'
-        + '</div>';
-    }).join('');
-  } else {
-    html += '<div class="pg-empty">Belum ada data overtime bulan ini.</div>';
-  }
-  html += '</div>';
+  slip += '<tr class="pg-slip-tr-main"><td>Overtime (' + totalJam + ' jam)</td><td class="pg-slip-td-right">+ ' + fmtRp(totalOvertime) + '</td></tr>';
+  ovMonth.forEach(o => {
+    const d    = new Date(o.tgl + 'T00:00:00');
+    const tgl  = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'long' });
+    const val  = Math.round(o.jam * payrollSettings.overtimeRate);
+    const delBtn = (!closed && isLoggedIn)
+      ? ' <button class="pg-slip-del admin-only" onclick="deletePgOvertime(\'' + o.id + '\')" title="Hapus">&#10005;</button>'
+      : '';
+    slip += '<tr class="pg-slip-tr-sub"><td>' + tgl + ' — ' + o.jam + ' jam &times; ' + fmtRp(payrollSettings.overtimeRate) + '/jam' + delBtn + '</td><td class="pg-slip-td-right">' + fmtRp(val) + '</td></tr>';
+  });
 
   // Additional
-  html += '<div class="pg-detail-section">'
-    + '<div class="pg-detail-section-title">Additional Gaji</div>';
-  if (adMonth.length) {
-    html += adMonth.map(a =>
-      '<div class="pg-detail-row">'
-      + '<div class="pg-dr-info"><div class="pg-dr-main">' + (a.deskripsi || 'Tanpa keterangan') + '</div></div>'
-      + '<div class="pg-dr-val">+' + fmtRp(a.nominal) + '</div>'
-      + '<button class="btn-icon del admin-only" title="Hapus" onclick="deletePgAdditional(\'' + a.id + '\')">&#128465;</button>'
-      + '</div>'
-    ).join('');
-  } else {
-    html += '<div class="pg-empty">Belum ada additional gaji bulan ini.</div>';
+  slip += '<tr class="pg-slip-tr-main"><td>Additional Gaji</td><td class="pg-slip-td-right">+ ' + fmtRp(totalAdditional) + '</td></tr>';
+  adMonth.forEach(a => {
+    const delBtn = (!closed && isLoggedIn)
+      ? ' <button class="pg-slip-del admin-only" onclick="deletePgAdditional(\'' + a.id + '\')" title="Hapus">&#10005;</button>'
+      : '';
+    slip += '<tr class="pg-slip-tr-sub"><td>' + (a.deskripsi || 'Additional') + delBtn + '</td><td class="pg-slip-td-right">' + fmtRp(a.nominal) + '</td></tr>';
+  });
+
+  slip += '</tbody>'
+    + '<tfoot><tr class="pg-slip-tr-total"><td>TOTAL GAJI BERSIH</td><td class="pg-slip-td-right">' + fmtRp(totalGaji) + '</td></tr></tfoot>'
+    + '</table>';
+
+  // Tanda tangan
+  if (closed && closedInfo) {
+    const tglClose = new Date(closedInfo.closedAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+    slip += '<div class="pg-slip-sign">'
+      + '<div class="pg-slip-sign-box">'
+      + '<div class="pg-slip-sign-label">Ditutup, ' + tglClose + '</div>'
+      + '<div class="pg-slip-sign-line">( _________________________ )</div>'
+      + '</div></div>';
   }
-  html += '</div>';
 
-  // Total
-  html += '<div class="pg-detail-total">'
-    + '<span class="pg-dt-label">Total Gaji ' + BULAN_NAMES[bulan] + ' ' + tahun + '</span>'
-    + '<span class="pg-dt-val">' + fmtRp(totalGaji) + '</span>'
-    + '</div>';
+  slip += '</div>'; // end pg-slip-preview
 
-  document.getElementById('pgDetailBody').innerHTML = html;
+  document.getElementById('pgDetailBody').innerHTML = statusHtml + slip;
   showView('viewPenggajianDetail');
+}
+
+// --- Close / Reopen ---
+async function closePgMonth(bulan, tahun) {
+  try {
+    await apiFetch('/api/penggajian/close', { method: 'POST', body: JSON.stringify({ bulan, tahun }) });
+    const now = new Date().toISOString();
+    payrollClosedMonths.push({ bulan, tahun, closedAt: now });
+    viewPgMonth(bulan, tahun);
+    renderPenggajianDashboard();
+    showToast('Gaji ' + BULAN_NAMES[bulan] + ' ' + tahun + ' ditutup.');
+  } catch (e) {
+    showToast('Gagal menutup bulan: ' + e.message);
+  }
+}
+
+async function reopenPgMonth(bulan, tahun) {
+  try {
+    await apiFetch('/api/penggajian/close/' + bulan + '/' + tahun, { method: 'DELETE' });
+    payrollClosedMonths = payrollClosedMonths.filter(c => !(c.bulan === bulan && c.tahun === tahun));
+    viewPgMonth(bulan, tahun);
+    renderPenggajianDashboard();
+    showToast('Gaji ' + BULAN_NAMES[bulan] + ' ' + tahun + ' dibuka kembali.');
+  } catch (e) {
+    showToast('Gagal membuka kembali: ' + e.message);
+  }
+}
+
+// --- Print / Export PDF ---
+function printPgSlip(bulan, tahun) {
+  const closed     = isMonthClosed(bulan, tahun);
+  const closedInfo = getClosedInfo(bulan, tahun);
+  const { ovMonth, adMonth, totalJam, totalOvertime, totalAdditional, totalGaji } = pgCalcMonth(bulan, tahun);
+
+  const tglClose = (closed && closedInfo)
+    ? new Date(closedInfo.closedAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
+    : null;
+
+  const ovRows = ovMonth.map(o => {
+    const d   = new Date(o.tgl + 'T00:00:00');
+    const tgl = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+    const val = Math.round(o.jam * payrollSettings.overtimeRate);
+    return '<tr class="sub"><td>' + tgl + ' — ' + o.jam + ' jam &times; ' + fmtRp(payrollSettings.overtimeRate) + '/jam</td><td>' + fmtRp(val) + '</td></tr>';
+  }).join('');
+
+  const adRows = adMonth.map(a =>
+    '<tr class="sub"><td>' + (a.deskripsi || 'Additional') + '</td><td>' + fmtRp(a.nominal) + '</td></tr>'
+  ).join('');
+
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+    + '<title>Slip Gaji ' + BULAN_NAMES[bulan] + ' ' + tahun + '</title>'
+    + '<style>'
+    + '*{margin:0;padding:0;box-sizing:border-box}'
+    + 'body{font-family:Arial,sans-serif;font-size:12px;color:#000;background:#fff;padding:20px}'
+    + '.slip{max-width:680px;margin:0 auto;border:2px solid #333;padding:28px 32px}'
+    + '.slip-head{text-align:center;border-bottom:2px solid #333;padding-bottom:14px;margin-bottom:18px}'
+    + '.slip-head .title{font-size:17px;font-weight:bold;letter-spacing:1px;text-transform:uppercase}'
+    + '.slip-head .sub{font-size:12px;margin-top:4px;color:#555}'
+    + '.emp{display:grid;grid-template-columns:100px 8px 1fr;gap:4px;margin-bottom:18px}'
+    + '.emp .lbl{font-weight:bold}'
+    + 'table{width:100%;border-collapse:collapse;margin-bottom:20px}'
+    + 'th,td{border:1px solid #bbb;padding:7px 10px;text-align:left}'
+    + 'th{background:#e8e8e8;font-weight:bold}'
+    + 'tr.sub td{font-size:11px;color:#444;padding:4px 10px 4px 22px}'
+    + 'tr.main td{font-weight:600}'
+    + 'tr.total td{background:#ddd;font-weight:bold;font-size:13px}'
+    + '.td-r{text-align:right}'
+    + '.sign{display:flex;justify-content:flex-end;margin-top:24px}'
+    + '.sign-box{text-align:center}'
+    + '.sign-line{border-top:1px solid #333;margin-top:55px;padding-top:5px;font-size:11px;min-width:200px}'
+    + '.status-draft{text-align:center;border:1px solid #c00;color:#c00;padding:5px;font-size:11px;font-weight:bold;margin-bottom:14px}'
+    + '.status-closed{text-align:center;color:#555;font-size:11px;margin-bottom:14px}'
+    + '@media print{body{padding:0}}'
+    + '</style></head><body>'
+    + '<div class="slip">'
+    + '<div class="slip-head">'
+    + '<div class="title">Slip Gaji Karyawan</div>'
+    + '<div class="sub">Periode: ' + BULAN_NAMES[bulan] + ' ' + tahun + '</div>'
+    + '</div>'
+    + (tglClose ? '<div class="status-closed">Ditutup pada: ' + tglClose + '</div>' : '<div class="status-draft">DRAFT — BELUM DITUTUP</div>')
+    + '<div class="emp"><span class="lbl">Nama</span><span>:</span><span>' + (payrollSettings.nama || '—') + '</span>'
+    + '<span class="lbl">Jabatan</span><span>:</span><span>' + (payrollSettings.jabatan || '—') + '</span></div>'
+    + '<table>'
+    + '<thead><tr><th>Komponen Gaji</th><th class="td-r" style="width:200px">Nominal</th></tr></thead>'
+    + '<tbody>'
+    + '<tr class="main"><td>Gaji Pokok</td><td class="td-r">' + fmtRp(payrollSettings.gajiPokok) + '</td></tr>'
+    + '<tr class="main"><td>Overtime (' + totalJam + ' jam)</td><td class="td-r">+ ' + fmtRp(totalOvertime) + '</td></tr>'
+    + ovRows
+    + '<tr class="main"><td>Additional Gaji</td><td class="td-r">+ ' + fmtRp(totalAdditional) + '</td></tr>'
+    + adRows
+    + '</tbody>'
+    + '<tfoot><tr class="total"><td>TOTAL GAJI BERSIH</td><td class="td-r">' + fmtRp(totalGaji) + '</td></tr></tfoot>'
+    + '</table>'
+    + '<div class="sign"><div class="sign-box">'
+    + '<div style="font-size:11px;color:#555">' + (tglClose ? 'Ditutup, ' + tglClose : 'Tanda Tangan') + '</div>'
+    + '<div class="sign-line">( _________________________ )</div>'
+    + '</div></div>'
+    + '</div>'
+    + '<script>window.onload=function(){window.print();}<\/script>'
+    + '</body></html>';
+
+  const win = window.open('', '_blank', 'width=800,height=900');
+  if (!win) { showToast('Izinkan popup browser untuk mengekspor PDF.'); return; }
+  win.document.write(html);
+  win.document.close();
 }
 
 // --- Settings modal ---
 function openPgSettingsModal() {
+  document.getElementById('pgSettingsNama').value         = payrollSettings.nama || '';
+  document.getElementById('pgSettingsJabatan').value      = payrollSettings.jabatan || '';
   document.getElementById('pgSettingsGajiPokok').value    = payrollSettings.gajiPokok;
   document.getElementById('pgSettingsOvertimeRate').value = payrollSettings.overtimeRate;
   document.getElementById('pgSettingsModal').classList.add('show');
@@ -1347,12 +1521,14 @@ function closePgSettingsModal() {
   document.getElementById('pgSettingsModal').classList.remove('show');
 }
 async function savePgSettings() {
+  const nama         = document.getElementById('pgSettingsNama').value.trim();
+  const jabatan      = document.getElementById('pgSettingsJabatan').value.trim();
   const gajiPokok    = parseInt(document.getElementById('pgSettingsGajiPokok').value)    || 0;
   const overtimeRate = parseInt(document.getElementById('pgSettingsOvertimeRate').value) || 0;
   try {
     const res = await apiFetch('/api/penggajian/settings', {
       method: 'PUT',
-      body: JSON.stringify({ gajiPokok, overtimeRate }),
+      body: JSON.stringify({ gajiPokok, overtimeRate, nama, jabatan }),
     });
     payrollSettings = res;
     closePgSettingsModal();
@@ -1370,13 +1546,17 @@ async function savePgSettings() {
 
 // --- Input modal ---
 function openPgInputModal() {
-  // Pre-fill bulan/tahun dengan bulan yang sedang dilihat atau bulan sekarang
-  const ref = pgCurrentMonth || { bulan: new Date().getMonth() + 1, tahun: new Date().getFullYear() };
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('pgOvTgl').value            = today;
+  const active = getActiveMonth();
+  const today  = new Date().toISOString().split('T')[0];
+  // Untuk overtime, pakai tanggal hari ini tapi hanya jika berada di bulan aktif
+  const now = new Date();
+  const ovDate = (now.getMonth() + 1 === active.bulan && now.getFullYear() === active.tahun)
+    ? today
+    : active.tahun + '-' + String(active.bulan).padStart(2, '0') + '-01';
+  document.getElementById('pgOvTgl').value            = ovDate;
   document.getElementById('pgOvJam').value            = '';
-  document.getElementById('pgAddBulan').value         = ref.bulan;
-  document.getElementById('pgAddTahun').value         = ref.tahun;
+  document.getElementById('pgAddBulan').value         = active.bulan;
+  document.getElementById('pgAddTahun').value         = active.tahun;
   document.getElementById('pgAddDeskripsi').value     = '';
   document.getElementById('pgAddNominal').value       = '';
   switchPgTab('overtime');
@@ -1387,17 +1567,17 @@ function closePgInputModal() {
 }
 function switchPgTab(tab) {
   pgActiveTab = tab;
-  document.getElementById('pgTabOvertime').classList.toggle('active',    tab === 'overtime');
-  document.getElementById('pgTabAdditional').classList.toggle('active',  tab === 'additional');
-  document.getElementById('pgOvertimeForm').style.display    = tab === 'overtime'   ? 'block' : 'none';
-  document.getElementById('pgAdditionalForm').style.display  = tab === 'additional' ? 'block' : 'none';
+  document.getElementById('pgTabOvertime').classList.toggle('active',   tab === 'overtime');
+  document.getElementById('pgTabAdditional').classList.toggle('active', tab === 'additional');
+  document.getElementById('pgOvertimeForm').style.display   = tab === 'overtime'   ? 'block' : 'none';
+  document.getElementById('pgAdditionalForm').style.display = tab === 'additional' ? 'block' : 'none';
 }
 async function savePgInput() {
   try {
     if (pgActiveTab === 'overtime') {
       const tgl = document.getElementById('pgOvTgl').value;
       const jam = parseFloat(document.getElementById('pgOvJam').value);
-      if (!tgl)       { showToast('Pilih tanggal overtime.'); return; }
+      if (!tgl)            { showToast('Pilih tanggal overtime.'); return; }
       if (!jam || jam <= 0) { showToast('Masukkan jumlah jam yang valid.'); return; }
       const entry = await apiFetch('/api/penggajian/overtime', {
         method: 'POST', body: JSON.stringify({ tgl, jam }),

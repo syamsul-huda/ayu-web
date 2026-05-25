@@ -133,6 +133,17 @@ CREATE TABLE IF NOT EXISTS payroll_additional (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS payroll_closed_months (
+  id SERIAL PRIMARY KEY,
+  bulan INTEGER NOT NULL,
+  tahun INTEGER NOT NULL,
+  closed_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(bulan, tahun)
+);
+
+ALTER TABLE payroll_settings ADD COLUMN IF NOT EXISTS nama VARCHAR(100) DEFAULT '';
+ALTER TABLE payroll_settings ADD COLUMN IF NOT EXISTS jabatan VARCHAR(100) DEFAULT '';
+
 -- Migration: ganti kolom pa_2023/pa_2024/pa_2025 ke pa_year+val yang dinamis
 -- Jalankan ini sekali pada database yang sudah ada:
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS pa_year1 VARCHAR(20) DEFAULT '2023';

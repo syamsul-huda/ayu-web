@@ -6,24 +6,35 @@ router.get('/settings', requireAuth, async (req, res) => {
   try {
     const r = await pool.query('SELECT * FROM payroll_settings LIMIT 1');
     if (!r.rows.length) {
-      await pool.query('INSERT INTO payroll_settings (gaji_pokok, overtime_rate) VALUES (0, 0)');
-      return res.json({ gajiPokok: 0, overtimeRate: 0 });
+      await pool.query('INSERT INTO payroll_settings (gaji_pokok, overtime_rate, nama, jabatan) VALUES (0, 0, \'\', \'\')');
+      return res.json({ gajiPokok: 0, overtimeRate: 0, nama: '', jabatan: '' });
     }
     const s = r.rows[0];
-    res.json({ gajiPokok: Number(s.gaji_pokok), overtimeRate: Number(s.overtime_rate) });
+    res.json({
+      gajiPokok: Number(s.gaji_pokok),
+      overtimeRate: Number(s.overtime_rate),
+      nama: s.nama || '',
+      jabatan: s.jabatan || '',
+    });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 router.put('/settings', requireAuth, async (req, res) => {
   try {
-    const { gajiPokok = 0, overtimeRate = 0 } = req.body;
+    const { gajiPokok = 0, overtimeRate = 0, nama = '', jabatan = '' } = req.body;
     const r = await pool.query('SELECT id FROM payroll_settings LIMIT 1');
     if (!r.rows.length) {
-      await pool.query('INSERT INTO payroll_settings (gaji_pokok, overtime_rate) VALUES ($1, $2)', [gajiPokok, overtimeRate]);
+      await pool.query(
+        'INSERT INTO payroll_settings (gaji_pokok, overtime_rate, nama, jabatan) VALUES ($1, $2, $3, $4)',
+        [gajiPokok, overtimeRate, nama, jabatan]
+      );
     } else {
-      await pool.query('UPDATE payroll_settings SET gaji_pokok=$1, overtime_rate=$2, updated_at=NOW() WHERE id=$3', [gajiPokok, overtimeRate, r.rows[0].id]);
+      await pool.query(
+        'UPDATE payroll_settings SET gaji_pokok=$1, overtime_rate=$2, nama=$3, jabatan=$4, updated_at=NOW() WHERE id=$5',
+        [gajiPokok, overtimeRate, nama, jabatan, r.rows[0].id]
+      );
     }
-    res.json({ gajiPokok: Number(gajiPokok), overtimeRate: Number(overtimeRate) });
+    res.json({ gajiPokok: Number(gajiPokok), overtimeRate: Number(overtimeRate), nama, jabatan });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -87,6 +98,37 @@ router.post('/additional', requireAuth, async (req, res) => {
 router.delete('/additional/:id', requireAuth, async (req, res) => {
   try {
     await pool.query('DELETE FROM payroll_additional WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/closed', requireAuth, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM payroll_closed_months ORDER BY tahun DESC, bulan DESC');
+    res.json(r.rows.map(c => ({
+      id: c.id,
+      bulan: c.bulan,
+      tahun: c.tahun,
+      closedAt: c.closed_at,
+    })));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/close', requireAuth, async (req, res) => {
+  try {
+    const { bulan, tahun } = req.body;
+    if (!bulan || !tahun) return res.status(400).json({ error: 'bulan dan tahun wajib diisi' });
+    await pool.query(
+      'INSERT INTO payroll_closed_months (bulan, tahun) VALUES ($1, $2) ON CONFLICT (bulan, tahun) DO NOTHING',
+      [bulan, tahun]
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.delete('/close/:bulan/:tahun', requireAuth, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM payroll_closed_months WHERE bulan=$1 AND tahun=$2', [req.params.bulan, req.params.tahun]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
