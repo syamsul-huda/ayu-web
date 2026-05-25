@@ -1394,7 +1394,7 @@ function viewPgMonth(bulan, tahun) {
     slip += '<div class="pg-slip-sign">'
       + '<div class="pg-slip-sign-box">'
       + '<div class="pg-slip-sign-label">Ditutup, ' + tglClose + '</div>'
-      + '<div class="pg-slip-sign-line">( _________________________ )</div>'
+      + '<div class="pg-slip-sign-line">( Ayu Fitriah N )</div>'
       + '</div></div>';
   }
 
@@ -1497,7 +1497,7 @@ function printPgSlip(bulan, tahun) {
     + '</table>'
     + '<div class="sign"><div class="sign-box">'
     + '<div style="font-size:11px;color:#555">' + (tglClose ? 'Ditutup, ' + tglClose : 'Tanda Tangan') + '</div>'
-    + '<div class="sign-line">( _________________________ )</div>'
+    + '<div class="sign-line">( Ayu Fitriah N )</div>'
     + '</div></div>'
     + '</div>'
     + '<script>window.onload=function(){window.print();}<\/script>'
