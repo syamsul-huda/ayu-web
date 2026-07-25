@@ -1202,27 +1202,60 @@ function fmtRp(n) {
   return 'Rp ' + Number(n).toLocaleString('id-ID');
 }
 
+// Periode penggajian: 26 bulan lalu s/d 25 bulan ini
+// Tanggal 26+ masuk ke bulan berikutnya; tanggal 1-25 masuk bulan tersebut
+function getPayrollMonth(tglStr) {
+  const d = new Date(tglStr + 'T00:00:00');
+  let bulan = d.getMonth() + 1;
+  let tahun = d.getFullYear();
+  if (d.getDate() > 25) {
+    bulan++;
+    if (bulan > 12) { bulan = 1; tahun++; }
+  }
+  return { bulan, tahun };
+}
+
+// Kembalikan string periode: "26 Juni 2026 – 25 Juli 2026" untuk bulan Juli 2026
+function getPeriodeStr(bulan, tahun) {
+  let prevBulan = bulan - 1;
+  let prevTahun = tahun;
+  if (prevBulan < 1) { prevBulan = 12; prevTahun--; }
+  return '26 ' + BULAN_NAMES[prevBulan] + ' ' + prevTahun + ' – 25 ' + BULAN_NAMES[bulan] + ' ' + tahun;
+}
+
 function isMonthClosed(bulan, tahun) {
-  return payrollClosedMonths.some(c => c.bulan === bulan && c.tahun === tahun);
+  if (payrollClosedMonths.some(c => c.bulan === bulan && c.tahun === tahun)) return true;
+  // Auto-close: jika hari ini >= 25, bulan kalender saat ini otomatis ditutup
+  const now = new Date();
+  return now.getDate() >= 25 && now.getMonth() + 1 === bulan && now.getFullYear() === tahun;
 }
 
 function getClosedInfo(bulan, tahun) {
   return payrollClosedMonths.find(c => c.bulan === bulan && c.tahun === tahun) || null;
 }
 
-// Bulan aktif = bulan setelah bulan terakhir yang di-close (atau bulan sekarang jika belum ada)
+// Bulan aktif = bulan terbuka berikutnya, mempertimbangkan auto-close tanggal 25
 function getActiveMonth() {
-  if (!payrollClosedMonths.length) {
-    const now = new Date();
-    return { bulan: now.getMonth() + 1, tahun: now.getFullYear() };
+  const now = new Date();
+  let bulan = now.getMonth() + 1;
+  let tahun = now.getFullYear();
+  // Jika hari ini >= 25, bulan sekarang otomatis tutup, aktif = bulan berikutnya
+  if (now.getDate() >= 25) {
+    bulan++;
+    if (bulan > 12) { bulan = 1; tahun++; }
   }
-  const sorted = [...payrollClosedMonths].sort((a, b) =>
-    b.tahun !== a.tahun ? b.tahun - a.tahun : b.bulan - a.bulan
-  );
-  let nextBulan = sorted[0].bulan + 1;
-  let nextTahun = sorted[0].tahun;
-  if (nextBulan > 12) { nextBulan = 1; nextTahun++; }
-  return { bulan: nextBulan, tahun: nextTahun };
+  if (payrollClosedMonths.length) {
+    const sorted = [...payrollClosedMonths].sort((a, b) =>
+      b.tahun !== a.tahun ? b.tahun - a.tahun : b.bulan - a.bulan
+    );
+    let dbBulan = sorted[0].bulan + 1;
+    let dbTahun = sorted[0].tahun;
+    if (dbBulan > 12) { dbBulan = 1; dbTahun++; }
+    if (dbTahun * 12 + dbBulan > tahun * 12 + bulan) {
+      return { bulan: dbBulan, tahun: dbTahun };
+    }
+  }
+  return { bulan, tahun };
 }
 
 async function loadPenggajian() {
@@ -1259,8 +1292,8 @@ function pgGetMonths() {
   const key    = (b, t) => t + '-' + String(b).padStart(2, '0');
   set.add(key(active.bulan, active.tahun));
   payrollOvertime.forEach(o => {
-    const d = new Date(o.tgl + 'T00:00:00');
-    set.add(key(d.getMonth() + 1, d.getFullYear()));
+    const pm = getPayrollMonth(o.tgl);
+    set.add(key(pm.bulan, pm.tahun));
   });
   payrollAdditional.forEach(a => set.add(key(a.bulan, a.tahun)));
   payrollClosedMonths.forEach(c => set.add(key(c.bulan, c.tahun)));
@@ -1271,8 +1304,8 @@ function pgGetMonths() {
 
 function pgCalcMonth(bulan, tahun) {
   const ovMonth = payrollOvertime.filter(o => {
-    const d = new Date(o.tgl + 'T00:00:00');
-    return d.getMonth() + 1 === bulan && d.getFullYear() === tahun;
+    const pm = getPayrollMonth(o.tgl);
+    return pm.bulan === bulan && pm.tahun === tahun;
   });
   const adMonth = payrollAdditional.filter(a => a.bulan === bulan && a.tahun === tahun);
   const totalJam        = ovMonth.reduce((s, o) => s + o.jam, 0);
@@ -1311,8 +1344,10 @@ function renderPenggajianDashboard() {
 
 function viewPgMonth(bulan, tahun) {
   pgCurrentMonth = { bulan, tahun };
-  const closed   = isMonthClosed(bulan, tahun);
-  const closedInfo = getClosedInfo(bulan, tahun);
+  const closedInfo   = getClosedInfo(bulan, tahun);
+  const dbClosed     = !!closedInfo;
+  const autoClosed   = !dbClosed && isMonthClosed(bulan, tahun);
+  const closed       = dbClosed || autoClosed;
   const { ovMonth, adMonth, totalJam, totalOvertime, totalAdditional, totalGaji } = pgCalcMonth(bulan, tahun);
 
   document.getElementById('pgDetailTitle').textContent = BULAN_NAMES[bulan] + ' ' + tahun;
@@ -1321,9 +1356,9 @@ function viewPgMonth(bulan, tahun) {
   let actions = '';
   if (isLoggedIn) {
     actions += '<button class="btn-pg-print" onclick="printPgSlip(' + bulan + ',' + tahun + ')">&#128438; Export PDF</button>';
-    if (closed) {
+    if (dbClosed) {
       actions += '<button class="btn-pg-reopen admin-only" onclick="reopenPgMonth(' + bulan + ',' + tahun + ')">&#128275; Buka Kembali</button>';
-    } else {
+    } else if (!autoClosed) {
       actions += '<button class="btn-pg-close admin-only" onclick="closePgMonth(' + bulan + ',' + tahun + ')">&#128274; Tutup Bulan</button>';
       actions += '<button class="btn-pg-input admin-only" onclick="openPgInputModal()">+ Input</button>';
     }
@@ -1332,9 +1367,11 @@ function viewPgMonth(bulan, tahun) {
 
   // Status bar
   let statusHtml = '';
-  if (closed && closedInfo) {
+  if (dbClosed && closedInfo) {
     const tglClose = new Date(closedInfo.closedAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
     statusHtml = '<div class="pg-slip-status closed">&#128274; Ditutup pada ' + tglClose + '</div>';
+  } else if (autoClosed) {
+    statusHtml = '<div class="pg-slip-status closed">&#128274; Ditutup otomatis — penggajian tanggal 25</div>';
   } else {
     statusHtml = '<div class="pg-slip-status draft">&#9998; Draft — belum ditutup</div>';
   }
@@ -1345,13 +1382,13 @@ function viewPgMonth(bulan, tahun) {
   // Header slip
   slip += '<div class="pg-slip-head">'
     + '<div class="pg-slip-head-title">SLIP GAJI</div>'
-    + '<div class="pg-slip-head-periode">Periode: ' + BULAN_NAMES[bulan] + ' ' + tahun + '</div>'
+    + '<div class="pg-slip-head-periode">Periode: ' + getPeriodeStr(bulan, tahun) + '</div>'
     + '</div>';
 
   // Info karyawan
   slip += '<div class="pg-slip-empinfo">'
     + '<div class="pg-slip-emprow"><span class="pg-slip-emp-label">Nama</span><span class="pg-slip-emp-colon">:</span><span class="pg-slip-emp-val">' + (payrollSettings.nama || '—') + '</span></div>'
-    + '<div class="pg-slip-emprow"><span class="pg-slip-emp-label">Periode</span><span class="pg-slip-emp-colon">:</span><span class="pg-slip-emp-val">' + BULAN_NAMES[bulan] + ' ' + tahun + '</span></div>'
+    + '<div class="pg-slip-emprow"><span class="pg-slip-emp-label">Periode</span><span class="pg-slip-emp-colon">:</span><span class="pg-slip-emp-val">' + getPeriodeStr(bulan, tahun) + '</span></div>'
     + '</div>';
 
   // Tabel komponen
@@ -1388,11 +1425,13 @@ function viewPgMonth(bulan, tahun) {
     + '</table>';
 
   // Tanda tangan
-  if (closed && closedInfo) {
-    const tglClose = new Date(closedInfo.closedAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+  if (closed) {
+    const tglClose = (dbClosed && closedInfo)
+      ? new Date(closedInfo.closedAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
+      : null;
     slip += '<div class="pg-slip-sign">'
       + '<div class="pg-slip-sign-box">'
-      + '<div class="pg-slip-sign-label">Ditutup, ' + tglClose + '</div>'
+      + '<div class="pg-slip-sign-label">' + (tglClose ? 'Ditutup, ' + tglClose : 'Ditutup tanggal 25') + '</div>'
       + '<div class="pg-slip-sign-line">( Ayu Fitriah N )</div>'
       + '</div></div>';
   }
@@ -1435,9 +1474,9 @@ function printPgSlip(bulan, tahun) {
   const closedInfo = getClosedInfo(bulan, tahun);
   const { ovMonth, adMonth, totalJam, totalOvertime, totalAdditional, totalGaji } = pgCalcMonth(bulan, tahun);
 
-  const tglClose = (closed && closedInfo)
+  const tglClose = closedInfo
     ? new Date(closedInfo.closedAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
-    : null;
+    : (closed ? 'tanggal 25' : null);
 
   const ovRows = ovMonth.map(o => {
     const d   = new Date(o.tgl + 'T00:00:00');
@@ -1478,7 +1517,7 @@ function printPgSlip(bulan, tahun) {
     + '<div class="slip">'
     + '<div class="slip-head">'
     + '<div class="title">Slip Gaji</div>'
-    + '<div class="sub">Periode: ' + BULAN_NAMES[bulan] + ' ' + tahun + '</div>'
+    + '<div class="sub">Periode: ' + getPeriodeStr(bulan, tahun) + '</div>'
     + '</div>'
     + (tglClose ? '<div class="status-closed">Ditutup pada: ' + tglClose + '</div>' : '<div class="status-draft">DRAFT — BELUM DITUTUP</div>')
     + '<div class="emp"><span class="lbl">Nama</span><span>:</span><span>' + (payrollSettings.nama || '—') + '</span></div>'
@@ -1494,7 +1533,7 @@ function printPgSlip(bulan, tahun) {
     + '<tfoot><tr class="total"><td>TOTAL GAJI BERSIH</td><td class="td-r">' + fmtRp(totalGaji) + '</td></tr></tfoot>'
     + '</table>'
     + '<div class="sign"><div class="sign-box">'
-    + '<div style="font-size:11px;color:#555">' + (tglClose ? 'Ditutup, ' + tglClose : 'Tanda Tangan') + '</div>'
+    + '<div style="font-size:11px;color:#555">' + (tglClose ? 'Ditutup, ' + tglClose : closed ? 'Ditutup tanggal 25' : 'Tanda Tangan') + '</div>'
     + '<div class="sign-line">( Ayu Fitriah N )</div>'
     + '</div></div>'
     + '</div>'
@@ -1543,10 +1582,12 @@ async function savePgSettings() {
 // --- Input modal ---
 function openPgInputModal() {
   const active = getActiveMonth();
-  const today  = new Date().toISOString().split('T')[0];
-  // Untuk overtime, pakai tanggal hari ini tapi hanya jika berada di bulan aktif
-  const now = new Date();
-  const ovDate = (now.getMonth() + 1 === active.bulan && now.getFullYear() === active.tahun)
+  const now    = new Date();
+  const today  = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+  // Default tanggal overtime: pakai hari ini jika hasil mapping-nya masuk ke bulan aktif,
+  // jika tidak (misal hari ini tanggal 25 yang auto-close) gunakan tanggal 1 bulan aktif
+  const pm = getPayrollMonth(today);
+  const ovDate = (pm.bulan === active.bulan && pm.tahun === active.tahun)
     ? today
     : active.tahun + '-' + String(active.bulan).padStart(2, '0') + '-01';
   document.getElementById('pgOvTgl').value            = ovDate;
